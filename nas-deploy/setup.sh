@@ -8,13 +8,13 @@ set -eu
 
 REPO_BASE="https://raw.githubusercontent.com/epheterson/icloud-docker-overlay/main/nas-deploy"
 CONFIG_DIR="/volume1/docker/icloud"
-PHOTOS_DEST="/volume1/ELP NAS/iCloud-Unified/photos"
-DRIVE_DEST="/volume1/ELP NAS/iCloud-Unified/drive"
+# Photos reuse existing boredazfcuk-format dirs at /volume1/ELP NAS/Pictures/iCloud/{Eric,Shared}
+# via filename_format: simple in config.yaml — no re-download.
+DRIVE_DEST="/volume1/ELP NAS/iCloud-Drive"
 DOCKER=/usr/local/bin/docker
 
 echo "→ Creating directories..."
 mkdir -p "$CONFIG_DIR/config"
-mkdir -p "$PHOTOS_DEST"
 mkdir -p "$DRIVE_DEST"
 
 echo "→ Fetching compose + config from $REPO_BASE..."

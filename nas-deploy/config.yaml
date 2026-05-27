@@ -1,13 +1,16 @@
-# Unified iCloud config — uses the patched mandarons schema with the new
-# `photos.library_destinations` block that keeps Personal and Shared photos
-# in separate directories (matching the boredazfcuk layout Eric had before).
+# Unified iCloud config — REUSES existing boredazfcuk-format photo dirs
+# via filename_format: simple (zero-redownload migration).
+#
 # Schema docs: https://github.com/mandarons/icloud-docker/blob/main/config.yaml
+# (plus three new optional keys from epheterson/icloud-docker fork:
+#  - photos.library_destinations
+#  - photos.filename_format
+#  - automatic Live Photo .mov pair download)
 
 app:
   credentials:
     username: epheterson@me.com
-    # No password here — supplied interactively during 2FA setup; cached
-    # in /config/session_data afterward.
+    # Supplied interactively during 2FA setup; cached in /config/session_data.
     retry_login_interval: 600
   root: /icloud
   region: global
@@ -16,36 +19,37 @@ app:
     filename: /config/icloud.log
   notifications:
     sync_summary:
-      enabled: false   # Will wire Zosia/Telegram later if we want sync alerts.
+      enabled: false   # Wire Zosia/Telegram later if we want sync alerts.
 
 # ─── Photos ───────────────────────────────────────────────────────────
-# Sync both libraries every 12h. Per-library destinations keep Personal
-# under photos/personal/ and Shared under photos/shared/ so we preserve
-# the directory layout Eric had with the two boredazfcuk containers.
-# Live Photos download both the HEIC AND the paired .mov automatically
-# because "original" is in file_sizes (the orchestrator patch handles
-# the .mov auto-append).
 photos:
-  destination: photos
-  remove_obsolete: true       # mirror iCloud deletes (Eric's default)
-  sync_interval: 43200        # 12 hours
+  destination: photos       # → /icloud/photos (mapped from /volume1/ELP NAS/Pictures/iCloud)
+  remove_obsolete: true     # mirror iCloud deletes (Eric's default)
+  sync_interval: 43200      # 12 hours
   all_albums: false
-  library_destinations:       # NEW — from feat/per-library-destinations PR
-    PrimarySync: personal
-    SharedLibrary: shared
+  # boredazfcuk-compat naming: produces plain IMG_1234.HEIC instead of
+  # mandarons' default IMG_1234__original__<base64id>.HEIC. mandarons checks
+  # existence by file SIZE so existing boredazfcuk files are recognised and
+  # NOT re-downloaded.
+  filename_format: simple
+  # Keep Personal and Shared in separate subdirs (matching the boredazfcuk
+  # layout Eric had with two containers). These names MUST match the
+  # existing on-disk directories so the existence check finds the files.
+  library_destinations:
+    PrimarySync: Eric
+    SharedLibrary: Shared
   filters:
     libraries:
       - PrimarySync
       - SharedLibrary
     file_sizes:
-      - original
-  folder_format: "%Y/%m"
+      - original              # also triggers Live Photo .mov pair auto-download
+  # No folder_format — boredazfcuk doesn't sub-folder by date, so we don't
+  # either. Existence check will match files at the root of each library dir.
 
 # ─── Drive ────────────────────────────────────────────────────────────
-# 12h cadence to match photos. auto_delete defaults to false — accidental
-# Drive deletions are riskier than photo deletes, so we keep tombstones.
 drive:
-  destination: drive
+  destination: drive          # → /icloud/drive (brand new dir on NAS)
   remove_obsolete: false      # tombstones for Drive (configurable)
   sync_interval: 43200        # 12 hours
   filters:

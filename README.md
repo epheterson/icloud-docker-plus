@@ -9,6 +9,7 @@ Docker image of [`mandarons/icloud-docker`](https://github.com/mandarons/icloud-
 | **iCloud auth on iOS 26.4+** | ❌ Broken — 2FA code never arrives ([#426](https://github.com/mandarons/icloud-docker/issues/426)) | ✅ Push notification triggered correctly |
 | **Live Photo `.mov` download** | ❌ HEIC only ([#199](https://github.com/mandarons/icloud-docker/issues/199), open since 2024) | ✅ Both HEIC + paired `.mov` |
 | **Per-library destinations** | ❌ All photos land in one tree | ✅ Optional `library_destinations` config block |
+| **Migrate from boredazfcuk/docker-icloudpd** | ❌ Re-downloads everything (different filename convention) | ✅ Optional `filename_format: simple` reuses existing files (no re-download) |
 | Everything else | ✅ | ✅ identical |
 
 ## Quick start

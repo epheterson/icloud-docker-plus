@@ -1,11 +1,17 @@
 # Unified iCloud backup — Personal Photos + Shared Library + iCloud Drive in one container, one auth.
 # Drop at /volume1/docker/icloud/docker-compose.yml on NAS.
 #
+# IMPORTANT: this config REUSES Eric's existing boredazfcuk-format photo
+# directories (/volume1/ELP NAS/Pictures/iCloud/{Eric,Shared}) by setting
+# `filename_format: simple` in config.yaml. mandarons sees the existing
+# files, checks them by size, and skips re-download. Drive lands in a
+# brand-new /iCloud-Drive dir since nothing existed there before.
+#
 # First-time setup:
 #   1. cd /volume1/docker/icloud && docker compose pull && docker compose up -d
 #   2. docker exec -it icloud sh -c "icloud --username=YOUR@APPLE.ID --session-directory=/config/session_data"
 #      Enter Apple ID password + 6-digit 2FA code from your trusted device.
-#   3. First sync kicks off automatically per sync_interval in config.yaml.
+#   3. First sync kicks off per sync_interval in config.yaml.
 services:
   icloud:
     image: ghcr.io/epheterson/icloud-docker-overlay:latest
@@ -17,12 +23,10 @@ services:
     volumes:
       # Container-local config + cached session cookies
       - /volume1/docker/icloud/config:/config
-      # Photo + Drive destinations under a NEW unified tree so we don't
-      # conflict with the legacy boredazfcuk layout at
-      # /volume1/ELP NAS/Pictures/iCloud/{Eric,Shared}. After the unified
-      # container validates a full sync, those legacy dirs can be deleted.
-      - /volume1/ELP NAS/iCloud-Unified/photos:/icloud/photos
-      - /volume1/ELP NAS/iCloud-Unified/drive:/icloud/drive
+      # Photos — REUSE existing per-library dirs (no re-download with filename_format: simple)
+      - /volume1/ELP NAS/Pictures/iCloud:/icloud/photos
+      # Drive — brand new dir (no existing data to reuse)
+      - /volume1/ELP NAS/iCloud-Drive:/icloud/drive
     mem_limit: 1g
     memswap_limit: 2g
     cpu_shares: 512
