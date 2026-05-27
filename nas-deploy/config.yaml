@@ -1,0 +1,47 @@
+# mandarons/icloud-docker config — covers Personal Photo Library + Shared Photo Library + iCloud Drive
+# all under one Apple ID, one 2FA event.
+#
+# Schema reference: https://github.com/mandarons/icloud-docker/blob/main/config.yaml
+# Paths inside container map to NAS volumes via docker-compose.yml.
+
+app:
+  credentials:
+    username: epheterson@me.com
+    # password lives in /config/keyring/ after first interactive auth — NEVER put it here.
+  region: global  # 'global' or 'china'
+
+  smtp:
+    # Optional — used by mandarons for 2FA expiry warnings. Skip for now (we use Telegram via Zosia for alerts).
+    enabled: false
+
+  logger:
+    level: info
+    filename: /config/icloud.log
+
+  # Run all three handlers every 12 hours, sequentially in this declared order.
+  # Eric: per the brainstorm doc, "altogether every twelve hours."
+  # mandarons/icloud-docker runs photos + drive in one pass — declared order below
+  # controls which library it walks first.
+  sync_interval: 43200  # 12 hours in seconds
+
+photos:
+  destination: /icloud/photos
+  remove_obsolete: true  # mirror iCloud deletes (Eric default; see design doc Q2)
+  filters:
+    libraries:
+      - PrimarySync       # Personal Photo Library
+      - SharedLibrary     # iCloud Shared Photo Library
+    file_sizes:
+      - original
+    extensions:
+      # leave empty — sync everything
+  folder_structure: "{:%Y/%m}"
+
+drive:
+  destination: /icloud/drive
+  remove_obsolete: false  # for Drive, default to keep — files are more accidentally-deletable than photos
+  filters:
+    folders:
+      # leave empty — sync the whole drive root
+    file_extensions:
+      # leave empty — sync everything

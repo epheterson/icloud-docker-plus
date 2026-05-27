@@ -1,0 +1,20 @@
+# NAS deployment for unified iCloud backup (overlay container)
+# Drop at /volume1/docker/icloud/docker-compose.yml on NAS
+# Then: docker compose up -d
+# Then: docker exec -it icloud bash and follow mandarons/icloud-docker docs for first-time 2FA.
+services:
+  icloud:
+    image: ghcr.io/epheterson/icloud-docker-overlay:latest
+    container_name: icloud
+    restart: unless-stopped
+    environment:
+      - TZ=America/Los_Angeles
+      - ENV_CONFIG_FILE_PATH=/config/config.yaml
+    volumes:
+      - /volume1/docker/icloud/config:/config
+      - /volume1/ELP NAS/Pictures/iCloud/Eric:/icloud/photos/personal
+      - /volume1/ELP NAS/Pictures/iCloud/Shared:/icloud/photos/shared
+      - /volume1/ELP NAS/iCloud/Drive:/icloud/drive
+    mem_limit: 1g
+    memswap_limit: 2g
+    cpu_shares: 512

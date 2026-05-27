@@ -1,53 +1,76 @@
 # icloud-docker-overlay
 
-Thin Docker image that overlays [epheterson/icloudpy@fix/ios-26.4-auth](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth) onto [`mandarons/icloud-drive:latest`](https://hub.docker.com/r/mandarons/icloud-drive) — restoring 2FA login on iOS 26.4+ trusted devices.
+Docker image of [`mandarons/icloud-docker`](https://github.com/mandarons/icloud-docker) with three pending upstream PRs already applied — restores iCloud auth on iOS 26.4+, downloads Live Photo `.mov` pairs properly, and supports per-library destination directories.
 
-## Why this exists
+## What's in this image vs. upstream mandarons
 
-[`mandarons/icloud-docker`](https://github.com/mandarons/icloud-docker) is the canonical container for unified iCloud (Photos + Drive) backup on a NAS. It pins [`icloudpy==0.8.0`](https://github.com/mandarons/icloudpy), which became unusable on iOS 26.4+ in February 2026: the 2FA prompt is sent but no verification code ever arrives on trusted devices — auth stalls forever. See [mandarons/icloud-docker#426](https://github.com/mandarons/icloud-docker/issues/426).
+| Capability | Upstream `mandarons/icloud-docker` | This image |
+|---|---|---|
+| **iCloud auth on iOS 26.4+** | ❌ Broken — 2FA code never arrives ([#426](https://github.com/mandarons/icloud-docker/issues/426)) | ✅ Push notification triggered correctly |
+| **Live Photo `.mov` download** | ❌ HEIC only ([#199](https://github.com/mandarons/icloud-docker/issues/199), open since 2024) | ✅ Both HEIC + paired `.mov` |
+| **Per-library destinations** | ❌ All photos land in one tree | ✅ Optional `library_destinations` config block |
+| Everything else | ✅ | ✅ identical |
 
-The upstream `icloudpy` library doesn't have the fix yet. I've ported the fix from [icloud_photos_downloader PR #1335](https://github.com/icloud-photos-downloader/icloud_photos_downloader/pull/1335) into [my icloudpy fork](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth) and submitted an upstream PR. While that PR is in review, this overlay container lets you actually run the official mandarons/icloud-docker setup today.
+## Quick start
 
-**This is a bridge.** When the upstream `icloudpy` PR merges and `mandarons/icloud-docker` bumps its `requirements.txt`, switch back to vanilla `mandarons/icloud-drive:latest` and retire this overlay.
+```bash
+docker pull ghcr.io/epheterson/icloud-docker-overlay:latest
+```
 
-## Use
-
-Identical to mandarons/icloud-docker — just swap the image:
+`docker-compose.yml`:
 
 ```yaml
-# docker-compose.yml on your NAS
 services:
   icloud:
     image: ghcr.io/epheterson/icloud-docker-overlay:latest
     container_name: icloud
     restart: unless-stopped
-    volumes:
-      - ./config:/config
-      - /volume1/ELP NAS/Pictures/iCloud/Eric:/icloud/photos/personal
-      - /volume1/ELP NAS/Pictures/iCloud/Shared:/icloud/photos/shared
-      - /volume1/ELP NAS/iCloud/Drive:/icloud/drive
     environment:
       - TZ=America/Los_Angeles
+      - ENV_CONFIG_FILE_PATH=/config/config.yaml
+    volumes:
+      - ./config:/config
+      - /path/to/photos:/icloud/photos
+      - /path/to/drive:/icloud/drive
 ```
 
-Use the same [`config.yaml`](https://github.com/mandarons/icloud-docker/blob/main/config.yaml) as upstream documents.
+`config.yaml` — uses the standard mandarons schema, plus the new optional `library_destinations`:
 
-## What's inside
-
-Just two lines on top of mandarons/icloud-drive:
-
-```dockerfile
-FROM mandarons/icloud-drive:latest
-RUN pip install --upgrade --force-reinstall \
-    "icloudpy @ git+https://github.com/epheterson/icloudpy.git@fix/ios-26.4-auth"
+```yaml
+app:
+  credentials:
+    username: you@me.com
+  root: /icloud
+  region: global
+photos:
+  destination: photos
+  sync_interval: 43200      # 12h
+  library_destinations:     # NEW (optional) — preserves per-library separation
+    PrimarySync: personal
+    SharedLibrary: shared
+  filters:
+    file_sizes: [original]
+    libraries: [PrimarySync, SharedLibrary]
+drive:
+  destination: drive
+  sync_interval: 43200
 ```
 
-(Plus a temporary `apk add git` since the base image is Alpine.)
+First-time 2FA:
+```bash
+docker exec -it icloud sh -c "icloud --username=you@me.com --session-directory=/config/session_data"
+```
 
-## Status
+## How the patches compose
 
-- **upstream icloudpy PR:** see [epheterson/icloudpy#fix/ios-26.4-auth](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth)
-- **upstream icloud-docker issue:** [mandarons/icloud-docker#426](https://github.com/mandarons/icloud-docker/issues/426)
-- This overlay will be **archived** once the upstream PR merges + mandarons ships a new container release.
+This image is built from a fork of `mandarons/icloud-docker` ([`epheterson/icloud-docker@feat/per-library-destinations-and-live-photos`](https://github.com/epheterson/icloud-docker/tree/feat/per-library-destinations-and-live-photos)) whose `requirements.txt` pins a fork of `mandarons/icloudpy` ([`epheterson/icloudpy@combined/all-fixes`](https://github.com/epheterson/icloudpy/tree/combined/all-fixes)) containing the iOS 26.4 auth fix + Live Photo `.mov` surfacing.
+
+Three upstream PRs are in flight:
+
+1. **icloudpy** — [iOS 26.4 SRP auth fix](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth) → `mandarons/icloudpy`
+2. **icloudpy** — [Live Photo `.mov` surfacing](https://github.com/epheterson/icloudpy/tree/feat/live-photos) → `mandarons/icloudpy`
+3. **icloud-docker** — [per-library destinations + Live Photo download](https://github.com/epheterson/icloud-docker/tree/feat/per-library-destinations-and-live-photos) → `mandarons/icloud-docker`
+
+**This repo is a bridge.** When all three merge upstream and mandarons publishes a new container release, switch back to `mandarons/icloud-drive:latest`.
 
 MIT.
