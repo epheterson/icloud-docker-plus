@@ -1,47 +1,53 @@
-# mandarons/icloud-docker config — covers Personal Photo Library + Shared Photo Library + iCloud Drive
-# all under one Apple ID, one 2FA event.
-#
-# Schema reference: https://github.com/mandarons/icloud-docker/blob/main/config.yaml
-# Paths inside container map to NAS volumes via docker-compose.yml.
+# Unified iCloud config — uses the patched mandarons schema with the new
+# `photos.library_destinations` block that keeps Personal and Shared photos
+# in separate directories (matching the boredazfcuk layout Eric had before).
+# Schema docs: https://github.com/mandarons/icloud-docker/blob/main/config.yaml
 
 app:
   credentials:
     username: epheterson@me.com
-    # password lives in /config/keyring/ after first interactive auth — NEVER put it here.
-  region: global  # 'global' or 'china'
-
-  smtp:
-    # Optional — used by mandarons for 2FA expiry warnings. Skip for now (we use Telegram via Zosia for alerts).
-    enabled: false
-
+    # No password here — supplied interactively during 2FA setup; cached
+    # in /config/session_data afterward.
+    retry_login_interval: 600
+  root: /icloud
+  region: global
   logger:
     level: info
     filename: /config/icloud.log
+  notifications:
+    sync_summary:
+      enabled: false   # Will wire Zosia/Telegram later if we want sync alerts.
 
-  # Run all three handlers every 12 hours, sequentially in this declared order.
-  # Eric: per the brainstorm doc, "altogether every twelve hours."
-  # mandarons/icloud-docker runs photos + drive in one pass — declared order below
-  # controls which library it walks first.
-  sync_interval: 43200  # 12 hours in seconds
-
+# ─── Photos ───────────────────────────────────────────────────────────
+# Sync both libraries every 12h. Per-library destinations keep Personal
+# under photos/personal/ and Shared under photos/shared/ so we preserve
+# the directory layout Eric had with the two boredazfcuk containers.
+# Live Photos download both the HEIC AND the paired .mov automatically
+# because "original" is in file_sizes (the orchestrator patch handles
+# the .mov auto-append).
 photos:
-  destination: /icloud/photos
-  remove_obsolete: true  # mirror iCloud deletes (Eric default; see design doc Q2)
+  destination: photos
+  remove_obsolete: true       # mirror iCloud deletes (Eric's default)
+  sync_interval: 43200        # 12 hours
+  all_albums: false
+  library_destinations:       # NEW — from feat/per-library-destinations PR
+    PrimarySync: personal
+    SharedLibrary: shared
   filters:
     libraries:
-      - PrimarySync       # Personal Photo Library
-      - SharedLibrary     # iCloud Shared Photo Library
+      - PrimarySync
+      - SharedLibrary
     file_sizes:
       - original
-    extensions:
-      # leave empty — sync everything
-  folder_structure: "{:%Y/%m}"
+  folder_format: "%Y/%m"
 
+# ─── Drive ────────────────────────────────────────────────────────────
+# 12h cadence to match photos. auto_delete defaults to false — accidental
+# Drive deletions are riskier than photo deletes, so we keep tombstones.
 drive:
-  destination: /icloud/drive
-  remove_obsolete: false  # for Drive, default to keep — files are more accidentally-deletable than photos
+  destination: drive
+  remove_obsolete: false      # tombstones for Drive (configurable)
+  sync_interval: 43200        # 12 hours
   filters:
-    folders:
-      # leave empty — sync the whole drive root
-    file_extensions:
-      # leave empty — sync everything
+    folders: []               # empty = sync entire Drive root
+    file_extensions: []       # empty = all extensions
