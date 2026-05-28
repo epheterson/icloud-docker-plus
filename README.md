@@ -22,6 +22,7 @@ Same Dockerfile, same entrypoint, same config schema as upstream — just six [p
 | **Hide originals of edited photos from photo apps** | ❌ Original + edited both visible (duplicates in Plex etc.) | ✅ Optional `photos.preserve_originals_as_bak` writes original as `IMG_1234.HEIC.original.bak` |
 | **`--dry-run` pre-flight check** | ❌ No way to verify auth + mounts before downloading | ✅ `python src/main.py --dry-run` authenticates, summarises, exits without writing |
 | **Mount-failsafe marker file** (boredazfcuk-style `.mounted` check) | ❌ Silent bind-mount failure → terabytes into wrong dir | ✅ Optional `{drive,photos}.require_mount_marker` refuses to sync unless `.mounted` exists |
+| **Embedded web UI** (re-auth from your phone, dashboard, log tail) | ❌ Port 80 EXPOSEd but never used | ✅ Opt-in via `app.web_ui.enabled`, runs on `:8080`, Apple-leaning UI |
 | Everything else | ✅ | ✅ identical (same source, same Dockerfile, same entrypoint) |
 
 All new config keys are **opt-in with safe defaults** — vanilla mandarons users see no behavior change.
@@ -340,11 +341,46 @@ From that point on, if the bind-mount silently fails (typo, missing share, NFS u
 
 Default is OFF for backward compatibility; existing setups see no behaviour change.
 
+### `web_ui` — built-in dashboard + re-auth from your phone
+
+Opt-in via `app.web_ui.enabled: true`. When enabled, a Flask app starts on `:8080` inside the container alongside the sync loop.
+
+```yaml
+app:
+  web_ui:
+    enabled: true     # default false — don't surprise vanilla users
+    host: 0.0.0.0     # default
+    port: 8080        # default
+```
+
+`docker-compose.yml`:
+```yaml
+services:
+  icloud:
+    image: ghcr.io/epheterson/icloud-docker-plus:latest
+    ports:
+      - "8080:8080"   # add this — adds host port mapping
+    # ... rest unchanged
+```
+
+What's there:
+- **Dashboard at `/`** — current Apple ID, mount-marker status per service, sync intervals, last 200 log lines.
+- **Re-authentication at `/auth`** — password → push notification to your trusted device → 6-digit code → trusted session written to the same `/config/session_data` the sync loop reads. The next sync loop iteration picks up the now-trusted session.
+- **JSON API** for monitors / scripts: `/api/health`, `/api/status`, `/api/logs`.
+
+**No built-in login.** Designed for Cloudflare Tunnel / Authelia / Tailscale front-ends. Do NOT expose `:8080` to the public internet without an auth proxy. Run locally first; protect before opening up.
+
+What's NOT in v1 (deferred — open an issue if you want any of these):
+- Apple's older 2-step (2SA) flow — pure 2FA only.
+- "Force sync now" button.
+- Inline content browser (Notes / Drive contents view).
+- CSRF token (relies on the auth-proxy layer to gate access).
+
 ---
 
 ## How the image is composed (provenance)
 
-This image is built from a fork of `mandarons/icloud-docker` whose `requirements.txt` pins a fork of `mandarons/icloudpy`. Eight pending upstream PRs:
+This image is built from a fork of `mandarons/icloud-docker` whose `requirements.txt` pins a fork of `mandarons/icloudpy`. Nine pending upstream PRs:
 
 ### To `mandarons/icloudpy` (the underlying iCloud Python library)
 1. [`fix/ios-26.4-auth`](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth) — iOS 26.4 SRP auth fix
@@ -357,6 +393,7 @@ This image is built from a fork of `mandarons/icloud-docker` whose `requirements
 6. [`feat/photos-preserve-originals-as-bak`](https://github.com/epheterson/icloud-docker/tree/feat/photos-preserve-originals-as-bak) — `.original.bak` for hidden originals
 7. [`feat/dry-run`](https://github.com/epheterson/icloud-docker/tree/feat/dry-run) — `--dry-run` CLI flag (authenticate + enumerate + exit)
 8. [`feat/require-mount-marker`](https://github.com/epheterson/icloud-docker/tree/feat/require-mount-marker) — opt-in `.mounted` failsafe file requirement
+9. [`feat/web-ui`](https://github.com/epheterson/icloud-docker/tree/feat/web-ui) — embedded Flask dashboard + on-device 2FA re-auth flow
 
 The combined branches for the actual build are [`epheterson/icloudpy@combined/all-fixes`](https://github.com/epheterson/icloudpy/tree/combined/all-fixes) and [`epheterson/icloud-docker@combined/all-features`](https://github.com/epheterson/icloud-docker/tree/combined/all-features).
 
@@ -374,6 +411,7 @@ This README will be updated with "✅ Upstream has merged X" markers as each PR 
 
 | Version | Date | Notes |
 |---|---|---|
+| `0.6.0` | 2026-05-28 | Embedded web UI (PR 9): dashboard + on-device 2FA re-auth flow (Apple-leaning design, opt-in via `app.web_ui.enabled`) |
 | `0.5.0` | 2026-05-27 | New `--dry-run` CLI flag (PR 7) + opt-in `require_mount_marker` failsafe (PR 8) — safety net for fresh installs |
 | `0.4.1` | 2026-05-27 | Code-review pass: `validate_file_sizes` filters internal `live_video_*` keys; simple+bak interaction fixed; `setup.sh` uses `su-exec abc` for 2FA |
 | `0.4.0` | 2026-05-27 | Added `preserve_originals_as_bak`; split combined branch into six PR-able feature branches |

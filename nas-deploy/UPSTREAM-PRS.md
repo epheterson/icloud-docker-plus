@@ -1,6 +1,6 @@
-# Upstream PR submission guide (eight PRs, push tonight)
+# Upstream PR submission guide (nine PRs, push tonight)
 
-Eight PRs total — two to `mandarons/icloudpy`, six to `mandarons/icloud-docker`. Each is a single feature for clean maintainer review. Submit in the order below — independence note for each.
+Nine PRs total — two to `mandarons/icloudpy`, seven to `mandarons/icloud-docker`. Each is a single feature for clean maintainer review. Submit in the order below — independence note for each.
 
 For each PR: easiest path is to **open the URL in a browser** and paste the body manually. The `gh pr create` commands are provided as alternatives.
 
@@ -475,6 +475,111 @@ config flag.
   filename).
 
 Full suite passes.
+```
+
+---
+
+## PR 9: Embedded web UI (dashboard + 2FA re-auth flow)
+
+**Open:** https://github.com/epheterson/icloud-docker/pull/new/feat/web-ui
+**Target:** `mandarons/icloud-docker:main`
+**Independent:** yes (uses ``hasattr(config_parser, ...)`` for PR 8's
+mount-marker helpers so it works on either main or the combined fork)
+**Title:** `feat: embedded web UI — dashboard + on-device 2FA re-auth flow`
+
+```markdown
+## Summary
+Adds a small Flask app that runs in a daemon thread alongside the sync
+loop on port 8080 (configurable). Designed to solve two recurring pain
+points reported by users on the mandarons issue tracker:
+
+1. **Re-authentication is CLI-only today.** When Apple's session
+   expires (every few weeks), users have to `docker exec -it` from
+   a terminal. With this PR, they can re-auth from a phone on the
+   same network — or via a reverse proxy from anywhere.
+2. **No visibility into running state.** Users routinely ask "is my
+   sync actually working? what's my mount marker status?" Today the
+   answer is to `docker logs` and squint. This PR surfaces it visually.
+
+## New optional config (all default-OFF, no breaking change)
+- `app.web_ui.enabled` (bool, default False)
+- `app.web_ui.host`    (str, default "0.0.0.0")
+- `app.web_ui.port`    (int, default 8080)
+
+Vanilla installs see no behaviour change. Dockerfile gains an
+`EXPOSE 8080` next to the existing `EXPOSE 80` so compose users can
+map the port without it being a runtime surprise.
+
+## What's in v1
+- `GET  /`                 dashboard (auth status, service cards,
+                           mount markers, last 200 log lines).
+- `GET  /auth`             form (password or 6-digit code state).
+- `POST /auth/password`    instantiates ICloudPyService, optionally
+                           fires the 2FA push (PR 1 hasattr-guarded
+                           so it works on stock icloudpy 0.8.0 too),
+                           stashes the live session.
+- `POST /auth/code`        validates code, trusts session, persists
+                           password to keyring (so the sync loop's
+                           next retry picks it up automatically).
+- `POST /auth/reset`       escape hatch.
+- `GET  /api/health`       200/503 — for UptimeRobot etc.
+- `GET  /api/status`       JSON dashboard payload.
+- `GET  /api/logs`         JSON log tail (last 200 lines).
+
+## Security model
+- **No built-in login.** Designed for LAN / Cloudflare Access /
+  Authelia / Tailscale. Default bind `0.0.0.0` for proxy access;
+  pin to `127.0.0.1` to require docker port-mapping.
+- **Werkzeug dev server.** Single-user, behind a proxy. Not gunicorn —
+  zero extra runtime deps.
+- **No CSRF token in v1.** Relies on the auth proxy as the trust
+  boundary. Easy to add in v1.1 if the maintainer wants it.
+- **Credentials.** Password lives in form payload + in-memory
+  ``_PENDING_AUTH`` dict (cleared after success/reset). Persisted to
+  the existing icloudpy keyring on success — no new persistence layer.
+
+## Implementation
+- `src/web.py` — Flask app factory + threading helper + handlers.
+- `src/templates/{base,dashboard,auth}.html` — Jinja2 templates with
+  inline CSS (Apple-leaning design: white surface, blue accent,
+  SF Pro stack, soft shadows, 12px radius). Single-file, no static
+  pipeline.
+- `src/config_parser.py` — three new helpers
+  (`get_web_ui_enabled` / `_host` / `_port`).
+- `src/main.py` — gains a testable `run()` entry that starts the
+  web thread when enabled, then delegates to `sync.sync()`. The
+  `if __name__ == "__main__"` block stays minimal.
+- `Dockerfile` — `EXPOSE 8080`.
+- `requirements.txt` — `flask==3.0.3` (single new runtime dep).
+
+## Tests
+38 new tests in `tests/test_web.py`:
+- TestHealth (2)
+- TestStatus (5) — 503 when missing, full payload, both services,
+  service shape, marker_present reflects FS
+- TestLogs (3) — array shape, empty when missing, _tail_log_file
+  helper test with 500-line fixture
+- TestDashboard (5) — 200, brand, username, both cards, log section
+- TestAuthForm (3) — password/code state switching
+- TestAuthPasswordPost (5) — empty / no username / 2FA push / no-2FA
+  keyring / exception
+- TestAuthCodePost (5) — empty / no pending / rejected / accepted
+  (trust+keyring+clear+redirect) / trust_session failure non-fatal
+- TestAuthReset (1) — clears pending
+- TestWebUiConfig (6) — defaults + read-through for all three helpers
+- TestMainRun (3) — enabled launches thread, disabled doesn't,
+  partial config doesn't
+
+All 38 pass in isolation. icloudpy is mocked via unittest.mock.patch
+end-to-end — no real network.
+
+## What's NOT in v1 (parked for v1.1)
+- 2SA fallback (the older "send code to device-list" flow — rarely
+  hit on iOS 13+ devices).
+- "Force re-sync now" button (needs a sync-loop signal channel).
+- CSRF token (only needed if the maintainer wants to remove the
+  reverse-proxy assumption).
+- Inline content browser (Notes, Drive contents).
 ```
 
 ---
