@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iCloud Docker — Dashboard (Mock B: Utility)</title>
+<style>
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --text: #0a0a0a;
+  --text-secondary: #525252;
+  --text-tertiary: #a3a3a3;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.16);
+  --divider: rgba(0,0,0,0.06);
+  --accent: #0a0a0a;
+  --link: #2563eb;
+  --success: #15803d;
+  --success-bg: #f0fdf4;
+  --warn: #a16207;
+  --warn-bg: #fefce8;
+  --err: #b91c1c;
+  --err-bg: #fef2f2;
+  --radius: 6px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px; line-height: 1.5;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+.mono {
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 12px; font-feature-settings: "zero", "ss02";
+}
+
+.header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.header-inner {
+  max-width: 1080px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; height: 44px; gap: 20px;
+}
+.brand {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+}
+.brand-mark { width: 18px; height: 18px; border-radius: 4px; background: var(--accent); }
+.nav { display: flex; gap: 2px; margin-left: auto; }
+.nav a {
+  color: var(--text-tertiary); text-decoration: none;
+  font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 5px;
+  transition: color 0.12s, background 0.12s;
+}
+.nav a:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+.nav a.active { color: var(--text); background: rgba(0,0,0,0.04); }
+
+.container { max-width: 1080px; margin: 0 auto; padding: 28px 20px 56px; }
+
+.crumb { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+.page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 4px; }
+.page-sub { color: var(--text-tertiary); font-size: 13px; margin: 0 0 24px; }
+
+.status-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+  padding: 10px 14px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+.status-text { font-size: 13px; color: var(--text); }
+.status-text .secondary { color: var(--text-tertiary); }
+.status-link {
+  margin-left: auto; color: var(--text); font-size: 12px; text-decoration: none;
+  font-weight: 500; padding: 4px 10px; border: 1px solid var(--border-strong);
+  border-radius: 5px; transition: background 0.12s;
+}
+.status-link:hover { background: rgba(0,0,0,0.04); }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+}
+.card-head {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--divider);
+}
+.card-title {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text);
+}
+.card-subtitle { color: var(--text-tertiary); font-size: 11px; margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.kv { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; font-size: 12px; }
+.kv dt { color: var(--text-tertiary); font-weight: 500; }
+.kv dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+.kv dd.mono { font-size: 11px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.pill.success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(21,128,61,0.16); }
+.pill.warn    { background: var(--warn-bg);    color: var(--warn);    border: 1px solid rgba(161,98,7,0.16); }
+.pill.err     { background: var(--err-bg);     color: var(--err);     border: 1px solid rgba(185,28,28,0.16); }
+.pill::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+.lib-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.lib-section dt { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 8px; }
+.lib-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 0; }
+.lib-row .arrow { color: var(--text-tertiary); }
+
+.logs-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px;
+}
+.logs-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--divider); }
+.logs-head h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.logs-head .refresh { color: var(--link); font-size: 11px; text-decoration: none; font-weight: 500; }
+.logs {
+  background: #0a0a0a; color: #d4d4d4;
+  border-radius: 5px; padding: 12px 14px;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace; font-size: 11px; line-height: 1.7;
+  max-height: 320px; overflow-y: auto;
+  font-feature-settings: "zero";
+}
+.log-info { color: #a3a3a3; }
+.log-warn { color: #fbbf24; }
+.log-err  { color: #f87171; }
+.log-ts   { color: #525252; }
+.log-msg  { color: #e5e5e5; }
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand"><span class="brand-mark"></span>icloud-docker-plus</div>
+    <nav class="nav">
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Auth</a>
+      <a href="#">Logs</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="crumb">Container · 0.6.0</div>
+  <h1 class="page-title">Status</h1>
+  <p class="page-sub">Last sync 2 h ago · next at 19:18 PDT · 4h since auth refresh</p>
+
+  <div class="status-row">
+    <div class="status-dot"></div>
+    <div class="status-text"><strong>epheterson@me.com</strong> <span class="secondary">· trusted session valid</span></div>
+    <a class="status-link" href="#">Re-authenticate</a>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Photos</div>
+        <span class="pill success">healthy</span>
+        <div class="card-subtitle">2h 04m ago</div>
+      </div>
+      <dl class="kv">
+        <dt>destination</dt><dd class="mono">/icloud/photos</dd>
+        <dt>interval</dt><dd>43,200 s</dd>
+        <dt>file_sizes</dt><dd class="mono">[original]</dd>
+        <dt>marker</dt><dd><span class="pill success">present</span> <span class="mono" style="color:var(--text-tertiary);margin-left:4px">.mounted</span></dd>
+      </dl>
+      <div class="lib-section">
+        <dt>library_destinations</dt>
+        <div class="lib-row"><span class="mono">PrimarySync</span><span class="arrow">→</span><span class="mono">Eric/</span></div>
+        <div class="lib-row"><span class="mono">SharedLibrary</span><span class="arrow">→</span><span class="mono">Shared/</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Drive</div>
+        <span class="pill success">healthy</span>
+        <div class="card-subtitle">2h 04m ago</div>
+      </div>
+      <dl class="kv">
+        <dt>destination</dt><dd class="mono">/icloud/drive</dd>
+        <dt>interval</dt><dd>43,200 s</dd>
+        <dt>remove_obsolete</dt><dd>false</dd>
+        <dt>marker</dt><dd><span class="pill success">present</span> <span class="mono" style="color:var(--text-tertiary);margin-left:4px">.mounted</span></dd>
+      </dl>
+      <div class="lib-section">
+        <dt>filters</dt>
+        <div class="lib-row"><span class="mono">folders</span><span class="arrow">=</span><span class="mono">[]</span></div>
+        <div class="lib-row"><span class="mono">file_extensions</span><span class="arrow">=</span><span class="mono">[]</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="logs-card">
+    <div class="logs-head">
+      <h2>Log · last 12 lines</h2>
+      <a class="refresh" href="#">refresh ↻</a>
+    </div>
+    <pre class="logs"><span class="log-ts">07:17:51</span> <span class="log-info">INFO </span> <span class="log-msg">Syncing drive every 43200 seconds.</span>
+<span class="log-ts">07:17:51</span> <span class="log-info">INFO </span> <span class="log-msg">Syncing photos every 43200 seconds.</span>
+<span class="log-ts">07:17:51</span> <span class="log-info">INFO </span> <span class="log-msg">Authenticating as epheterson@me.com</span>
+<span class="log-ts">07:17:52</span> <span class="log-info">INFO </span> <span class="log-msg">Session file exists — reusing trusted session</span>
+<span class="log-ts">07:17:52</span> <span class="log-info">INFO </span> <span class="log-msg">Syncing drive...</span>
+<span class="log-ts">07:17:53</span> <span class="log-info">INFO </span> <span class="log-msg">Drive synced (no changes detected for 2,331 files)</span>
+<span class="log-ts">07:17:53</span> <span class="log-info">INFO </span> <span class="log-msg">Syncing photos...</span>
+<span class="log-ts">07:18:01</span> <span class="log-info">INFO </span> <span class="log-msg">PrimarySync: no changes detected for 47,209 photos (size match)</span>
+<span class="log-ts">07:18:09</span> <span class="log-info">INFO </span> <span class="log-msg">SharedLibrary: no changes detected for 8,442 photos</span>
+<span class="log-ts">07:18:10</span> <span class="log-warn">WARN </span> <span class="log-msg">notify.send_sync_summary skipped (no notifier configured)</span>
+<span class="log-ts">07:18:10</span> <span class="log-info">INFO </span> <span class="log-msg">Photos synced</span>
+<span class="log-ts">07:18:10</span> <span class="log-info">INFO </span> <span class="log-msg">Next sync at Thu May 28 19:18:10 2026 ...</span></pre>
+  </div>
+</main>
+</body>
+</html>

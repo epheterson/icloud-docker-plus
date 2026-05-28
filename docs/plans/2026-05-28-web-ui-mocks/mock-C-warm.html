@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iCloud Docker — Dashboard (Mock C: Warm)</title>
+<style>
+:root {
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --text: #2f2e2b;
+  --text-secondary: #5b594f;
+  --text-tertiary: #908d7f;
+  --border: #ebe6d6;
+  --divider: #f0ebda;
+  --accent: #2383e2;
+  --success-bg: #e9f5ec;
+  --success-fg: #2c7a41;
+  --warn-bg: #fbf2dd;
+  --warn-fg: #8a5b14;
+  --err-bg:  #fce9e6;
+  --err-fg:  #a02c1f;
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(60,55,30,0.04), 0 2px 6px rgba(60,55,30,0.03);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 14px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: "iA Writer Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+.serif { font-family: "Iowan Old Style", "Charter", "Georgia", "Cambria", serif; }
+
+.header {
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 28px;
+  display: flex; align-items: center; height: 56px; gap: 24px;
+}
+.brand-wrap { display: flex; align-items: baseline; gap: 8px; }
+.brand { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.brand-version { color: var(--text-tertiary); font-size: 12px; }
+.nav { display: flex; gap: 18px; margin-left: auto; }
+.nav a {
+  color: var(--text-secondary); text-decoration: none;
+  font-size: 14px; padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav a:hover { color: var(--text); }
+.nav a.active { color: var(--text); border-bottom-color: var(--text); }
+
+.container { max-width: 960px; margin: 0 auto; padding: 36px 28px 56px; }
+
+.page-title { font-size: 28px; font-weight: 500; letter-spacing: -0.015em; margin: 0 0 6px; }
+.page-sub { color: var(--text-tertiary); font-size: 14px; margin: 0 0 28px; font-style: italic; }
+
+.status-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+  padding: 14px 18px; background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
+.status-text { font-size: 14px; }
+.status-text strong { font-weight: 600; }
+.status-text .secondary { color: var(--text-tertiary); }
+.status-link { margin-left: auto; color: var(--accent); font-size: 13px; text-decoration: none; font-weight: 500; }
+.status-link:hover { text-decoration: underline; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+@media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 22px 22px 20px;
+}
+.card-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--divider);
+}
+.card-mark { width: 8px; height: 26px; border-radius: 2px; background: var(--accent); opacity: 0.85; }
+.card-mark.drive { background: #4caf50; }
+.card-title { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; }
+.card-meta { color: var(--text-tertiary); font-size: 12px; margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.kv { display: grid; grid-template-columns: 120px 1fr; gap: 8px 14px; font-size: 13px; }
+.kv dt { color: var(--text-tertiary); }
+.kv dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+.kv dd.mono { font-size: 12.5px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 500;
+}
+.pill.success { background: var(--success-bg); color: var(--success-fg); }
+.pill.warn    { background: var(--warn-bg);    color: var(--warn-fg); }
+.pill.err     { background: var(--err-bg);     color: var(--err-fg); }
+.pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.lib-section { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--divider); }
+.lib-section .lbl { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 8px; }
+.lib-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; }
+.lib-row .arrow { color: var(--text-tertiary); }
+
+.logs-card {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 22px;
+}
+.logs-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--divider); }
+.logs-head h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.005em; }
+.logs-head h2 .count { color: var(--text-tertiary); font-weight: 400; font-size: 12px; margin-left: 8px; }
+.logs-head .refresh { color: var(--accent); font-size: 13px; text-decoration: none; font-weight: 500; }
+.logs {
+  background: #fbfaf6; border: 1px solid var(--divider);
+  border-radius: 6px; padding: 14px 16px;
+  font-family: "iA Writer Mono", ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.75;
+  color: var(--text-secondary); max-height: 320px; overflow-y: auto;
+}
+.log-info { color: var(--text-secondary); }
+.log-warn { color: var(--warn-fg); }
+.log-err  { color: var(--err-fg); }
+.log-ts   { color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="brand-wrap">
+      <div class="brand">iCloud Docker</div>
+      <div class="brand-version">v0.6.0</div>
+    </div>
+    <nav class="nav">
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Authenticate</a>
+      <a href="#">Logs</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <h1 class="page-title">Status</h1>
+  <p class="page-sub">Last sync 2 hours ago — next at 7:18 pm</p>
+
+  <div class="status-row">
+    <div class="status-dot"></div>
+    <div class="status-text">Signed in as <strong>epheterson@me.com</strong> <span class="secondary">— trusted session valid</span></div>
+    <a class="status-link" href="#">Re-authenticate</a>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-mark"></div>
+        <div class="card-title">Photos</div>
+        <span class="pill success">healthy</span>
+        <div class="card-meta">2h 04m ago</div>
+      </div>
+      <dl class="kv">
+        <dt>Destination</dt><dd class="mono">/icloud/photos</dd>
+        <dt>Interval</dt><dd>every 12 h</dd>
+        <dt>File sizes</dt><dd>original</dd>
+        <dt>Mount marker</dt><dd><span class="pill success">present at <span class="mono">.mounted</span></span></dd>
+      </dl>
+      <div class="lib-section">
+        <div class="lbl">Library destinations</div>
+        <div class="lib-row"><span class="mono">PrimarySync</span><span class="arrow">→</span><span class="mono">Eric/</span></div>
+        <div class="lib-row"><span class="mono">SharedLibrary</span><span class="arrow">→</span><span class="mono">Shared/</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-mark drive"></div>
+        <div class="card-title">Drive</div>
+        <span class="pill success">healthy</span>
+        <div class="card-meta">2h 04m ago</div>
+      </div>
+      <dl class="kv">
+        <dt>Destination</dt><dd class="mono">/icloud/drive</dd>
+        <dt>Interval</dt><dd>every 12 h</dd>
+        <dt>Remove obsolete</dt><dd>off (tombstones kept)</dd>
+        <dt>Mount marker</dt><dd><span class="pill success">present at <span class="mono">.mounted</span></span></dd>
+      </dl>
+      <div class="lib-section">
+        <div class="lbl">Filters</div>
+        <div class="lib-row"><span class="mono">folders: []</span></div>
+        <div class="lib-row"><span class="mono">file_extensions: []</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="logs-card">
+    <div class="logs-head">
+      <h2>Recent log <span class="count">last 12 lines</span></h2>
+      <a class="refresh" href="#">Refresh ↻</a>
+    </div>
+    <pre class="logs"><span class="log-ts">07:17:51</span> <span class="log-info">INFO</span>  Syncing drive every 43200 seconds.
+<span class="log-ts">07:17:51</span> <span class="log-info">INFO</span>  Syncing photos every 43200 seconds.
+<span class="log-ts">07:17:51</span> <span class="log-info">INFO</span>  Authenticating as epheterson@me.com
+<span class="log-ts">07:17:52</span> <span class="log-info">INFO</span>  Session file exists — reusing trusted session
+<span class="log-ts">07:17:52</span> <span class="log-info">INFO</span>  Syncing drive...
+<span class="log-ts">07:17:53</span> <span class="log-info">INFO</span>  Drive synced (no changes detected for 2,331 files)
+<span class="log-ts">07:17:53</span> <span class="log-info">INFO</span>  Syncing photos...
+<span class="log-ts">07:18:01</span> <span class="log-info">INFO</span>  PrimarySync: no changes detected for 47,209 photos (size match)
+<span class="log-ts">07:18:09</span> <span class="log-info">INFO</span>  SharedLibrary: no changes detected for 8,442 photos
+<span class="log-ts">07:18:10</span> <span class="log-warn">WARN</span>  notify.send_sync_summary skipped (no notifier configured)
+<span class="log-ts">07:18:10</span> <span class="log-info">INFO</span>  Photos synced
+<span class="log-ts">07:18:10</span> <span class="log-info">INFO</span>  Next sync at Thu May 28 19:18:10 2026 ...</pre>
+  </div>
+</main>
+</body>
+</html>
