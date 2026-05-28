@@ -1,56 +1,88 @@
-# Unified iCloud config — REUSES existing boredazfcuk-format photo dirs
-# via filename_format: simple (zero-redownload migration).
+# Example config for the icloud-docker-plus container.
 #
-# Schema docs: https://github.com/mandarons/icloud-docker/blob/main/config.yaml
-# (plus three new optional keys from epheterson/icloud-docker fork:
-#  - photos.library_destinations
-#  - photos.filename_format
-#  - automatic Live Photo .mov pair download)
+# This file is intentionally a TEMPLATE. Replace placeholders marked
+# REPLACE_ME and adjust paths/options for your setup, then mount it as
+# /config/config.yaml in the container.
+#
+# Upstream schema docs:
+#   https://github.com/mandarons/icloud-docker/blob/main/config.yaml
+#
+# Plus these knobs added by icloud-docker-plus (all optional, opt-in):
+#   - photos.library_destinations       → split libraries into subdirs
+#   - photos.filename_format            → 'metadata' (default) | 'simple'
+#                                          ('simple' enables boredazfcuk
+#                                          zero-redownload migration)
+#   - photos.preserve_originals_as_bak  → hide untouched-original copies
+#                                          of edited photos via .original.bak
+#   - automatic Live Photo .mov pair download (no config — happens
+#     whenever 'original' is in file_sizes)
 
 app:
   credentials:
-    username: epheterson@me.com
-    # Supplied interactively during 2FA setup; cached in /config/session_data.
+    username: REPLACE_ME@icloud.example
+    # Password is supplied interactively during 2FA setup and cached in
+    # /config/session_data — never put it in this file.
     retry_login_interval: 600
   root: /icloud
-  region: global
+  region: global              # 'global' or 'china'
   logger:
     level: info
     filename: /config/icloud.log
   notifications:
     sync_summary:
-      enabled: false   # Wire Zosia/Telegram later if we want sync alerts.
+      enabled: false          # set true + add discord/telegram/pushover/smtp
+                              # below for per-sync alerts
 
 # ─── Photos ───────────────────────────────────────────────────────────
 photos:
-  destination: photos       # → /icloud/photos (mapped from /volume1/ELP NAS/Pictures/iCloud)
-  remove_obsolete: true     # mirror iCloud deletes (Eric's default)
-  sync_interval: 43200      # 12 hours
+  destination: photos         # → <root>/photos = /icloud/photos
+  remove_obsolete: true       # mirror iCloud deletes (set false to keep
+                              # tombstones for accidental-delete recovery)
+  sync_interval: 43200        # 12 hours
   all_albums: false
-  # boredazfcuk-compat naming: produces plain IMG_1234.HEIC instead of
-  # mandarons' default IMG_1234__original__<base64id>.HEIC. mandarons checks
-  # existence by file SIZE so existing boredazfcuk files are recognised and
-  # NOT re-downloaded.
-  filename_format: simple
-  # Keep Personal and Shared in separate subdirs (matching the boredazfcuk
-  # layout Eric had with two containers). These names MUST match the
-  # existing on-disk directories so the existence check finds the files.
+
+  # Optional: separate libraries into their own subdirectories. Leave the
+  # block out entirely to dump all libraries into the same destination.
+  #
+  # Match the subdir names to existing directories if migrating from
+  # boredazfcuk (e.g. PrimarySync: Personal, SharedLibrary: Shared) so
+  # mandarons recognises the existing files and doesn't re-download.
   library_destinations:
-    PrimarySync: Eric
+    PrimarySync: Personal
     SharedLibrary: Shared
+
+  # Optional naming convention:
+  #   'metadata' (default) — IMG_1234__original__<base64id>.HEIC
+  #   'simple'             — IMG_1234.HEIC (boredazfcuk-compat; enables
+  #                          zero-redownload migration from that ecosystem)
+  # Can't be safely changed mid-flight on an existing install. Pick once.
+  filename_format: simple
+
+  # Optional: hide untouched-original copies of edited photos via the
+  # .original.bak suffix. Only meaningful when file_sizes includes BOTH
+  # 'original' AND 'original_alt' below.
+  # preserve_originals_as_bak: true
+
   filters:
     # No `libraries` filter = sync ALL libraries the Apple ID exposes
-    # (PrimarySync + SharedLibrary today; any future zones Apple adds
-    # get picked up automatically). Future-proof default.
+    # (PrimarySync + SharedLibrary today; Apple-added zones in the
+    # future get picked up automatically). Future-proof default.
+    #
+    # To restrict, list them explicitly:
+    #   libraries: [PrimarySync]
     file_sizes:
-      - original              # also triggers Live Photo .mov pair auto-download
-  # No folder_format — boredazfcuk doesn't sub-folder by date, so we don't
-  # either. Existence check will match files at the root of each library dir.
+      - original              # also triggers Live Photo .mov pair download
+      # - original_alt        # add to also back up the edited "current view"
+
+  # No `folder_format` → flat layout. If you set e.g. "%Y/%m" photos go
+  # into year/month subdirs (matches mandarons' typical layout). Cannot
+  # be safely changed mid-flight on an existing install.
 
 # ─── Drive ────────────────────────────────────────────────────────────
 drive:
-  destination: drive          # → /icloud/drive (brand new dir on NAS)
-  remove_obsolete: false      # tombstones for Drive (configurable)
+  destination: drive          # → <root>/drive = /icloud/drive
+  remove_obsolete: false      # default: keep tombstones for Drive (more
+                              # likely to be deleted accidentally than photos)
   sync_interval: 43200        # 12 hours
   filters:
     folders: []               # empty = sync entire Drive root

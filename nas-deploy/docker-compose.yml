@@ -1,32 +1,48 @@
-# Unified iCloud backup — Personal Photos + Shared Library + iCloud Drive in one container, one auth.
-# Drop at /volume1/docker/icloud/docker-compose.yml on NAS.
+# Compose template for the icloud-docker-plus container.
 #
-# IMPORTANT: this config REUSES Eric's existing boredazfcuk-format photo
-# directories (/volume1/ELP NAS/Pictures/iCloud/{Eric,Shared}) by setting
-# `filename_format: simple` in config.yaml. mandarons sees the existing
-# files, checks them by size, and skips re-download. Drive lands in a
-# brand-new /iCloud-Drive dir since nothing existed there before.
+# This file is intentionally a TEMPLATE. Replace any path marked
+# REPLACE_ME (or any /path/to/... placeholder) with the actual host
+# paths on your machine before `docker compose up`.
 #
-# First-time setup:
-#   1. cd /volume1/docker/icloud && docker compose pull && docker compose up -d
-#   2. docker exec -it icloud sh -c "icloud --username=YOUR@APPLE.ID --session-directory=/config/session_data"
-#      Enter Apple ID password + 6-digit 2FA code from your trusted device.
-#   3. First sync kicks off per sync_interval in config.yaml.
+# Pair with the config.yaml template next to this file. Both files are
+# downloaded by setup.sh into /volume1/docker/icloud/ on a Synology
+# NAS, where you edit them in place before re-running setup.sh.
+#
+# Schedule + retries are governed entirely by config.yaml
+# (photos.sync_interval / drive.sync_interval / app.credentials.retry_login_interval).
 services:
   icloud:
     image: ghcr.io/epheterson/icloud-docker-plus:latest
     container_name: icloud
     restart: unless-stopped
     environment:
-      - TZ=America/Los_Angeles
+      - TZ=America/Los_Angeles                  # change to your TZ if not Pacific
       - ENV_CONFIG_FILE_PATH=/config/config.yaml
     volumes:
-      # Container-local config + cached session cookies
+      # Container-local config + cached session cookies.
+      # Anything else under /config is fine — logs land here too.
       - /volume1/docker/icloud/config:/config
-      # Photos — REUSE existing per-library dirs (no re-download with filename_format: simple)
-      - /volume1/ELP NAS/Pictures/iCloud:/icloud/photos
-      # Drive — brand new dir (no existing data to reuse)
-      - /volume1/ELP NAS/iCloud-Drive:/icloud/drive
+
+      # Photos host path → /icloud/photos. Two scenarios:
+      #
+      #   FRESH INSTALL: point at an empty dir, e.g.
+      #     - /volume1/photo/iCloud:/icloud/photos
+      #
+      #   MIGRATING FROM boredazfcuk/docker-icloudpd (zero re-download):
+      #     point at the PARENT of your existing per-library dirs and
+      #     match those subdir names in config.yaml's library_destinations.
+      #     e.g. if boredazfcuk wrote to /volume1/photo/iCloud/{Personal,Shared}
+      #     then mount /volume1/photo/iCloud and set
+      #       library_destinations:
+      #         PrimarySync: Personal
+      #         SharedLibrary: Shared
+      #     in config.yaml (with filename_format: simple).
+      - REPLACE_ME_PHOTOS_HOST_PATH:/icloud/photos
+
+      # Drive host path → /icloud/drive. Almost always a fresh dir
+      # (boredazfcuk doesn't sync Drive, so there's nothing to reuse).
+      - REPLACE_ME_DRIVE_HOST_PATH:/icloud/drive
+
     mem_limit: 1g
     memswap_limit: 2g
     cpu_shares: 512

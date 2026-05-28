@@ -104,9 +104,9 @@ Leave them stopped (don't `rm`) for easy rollback. Files on disk are untouched.
 ### 2. Identify your existing photo paths
 Note what host paths your boredazfcuk containers wrote to. Common patterns:
 - `/volume1/photos/iCloud/Personal/` and `/volume1/photos/iCloud/Shared/`
-- `/volume1/ELP NAS/Pictures/iCloud/Eric/` and `.../Shared/`
+- `/volume1/photo/iCloud/<YourName>/` and `.../Shared/` (custom share-name setups)
 
-You'll point this container at the **parent** dir and use `library_destinations` to map each library to your existing subdir name.
+You'll point this container at the **parent** dir (e.g. `/volume1/photos/iCloud`) and use `library_destinations` to map each library to your existing subdir name.
 
 ### 3. Drop in a config that uses BOTH new knobs
 
