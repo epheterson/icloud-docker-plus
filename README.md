@@ -276,6 +276,8 @@ photos:
       - original_alt          # current "edited" view (visible)
 ```
 
+**Requires both `original` AND `original_alt` in `file_sizes`** to be meaningful — without `original_alt`, the edited "current view" isn't downloaded and you just get hidden originals with no visible counterpart. The toggle is harmless without `original_alt` (it just has no effect), but the pairing is the intended use.
+
 When `true` AND both `original` and `original_alt` are in `file_sizes`, edited photos land as TWO files:
 
 ```
@@ -319,6 +321,7 @@ This README will be updated with "✅ Upstream has merged X" markers as each PR 
 
 | Version | Date | Notes |
 |---|---|---|
+| `0.4.1` | 2026-05-27 | Code-review pass: `validate_file_sizes` filters internal `live_video_*` keys; simple+bak interaction fixed; `setup.sh` uses `su-exec abc` for 2FA |
 | `0.4.0` | 2026-05-27 | Added `preserve_originals_as_bak`; split combined branch into six PR-able feature branches |
 | `0.3.x` | 2026-05-27 | filename_format simple + collision fallback + multiple critical fixes |
 | `0.2.0` | 2026-05-27 | First image built from forked icloud-docker (vs overlay-FROM pattern in 0.1) |

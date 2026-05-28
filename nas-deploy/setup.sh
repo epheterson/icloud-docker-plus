@@ -40,7 +40,10 @@ echo ""
 echo "════════════════════════════════════════════════════════════════"
 echo "  NEXT (interactive — enter password + 2FA code on iPhone)"
 echo "════════════════════════════════════════════════════════════════"
-echo "  ssh nas '$DOCKER exec -it icloud sh -c \"icloud --username=$USERNAME --session-directory=/config/session_data\"'"
+# Wrap in su-exec abc so session_data is written with the non-root user
+# the container runs as. Without this, session files end up root-owned
+# and the abc user can't read them on subsequent container restarts.
+echo "  ssh nas '$DOCKER exec -it icloud sh -c \"su-exec abc icloud --username=$USERNAME --session-directory=/config/session_data\"'"
 echo ""
 echo "After that completes, watch first sync with:"
 echo "  ssh nas '$DOCKER logs -f icloud'"
