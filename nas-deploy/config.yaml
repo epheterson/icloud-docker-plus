@@ -39,9 +39,9 @@ photos:
     PrimarySync: Eric
     SharedLibrary: Shared
   filters:
-    libraries:
-      - PrimarySync
-      - SharedLibrary
+    # No `libraries` filter = sync ALL libraries the Apple ID exposes
+    # (PrimarySync + SharedLibrary today; any future zones Apple adds
+    # get picked up automatically). Future-proof default.
     file_sizes:
       - original              # also triggers Live Photo .mov pair auto-download
   # No folder_format — boredazfcuk doesn't sub-folder by date, so we don't

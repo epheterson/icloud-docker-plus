@@ -1,12 +1,12 @@
 # icloud-docker-plus
 
-> **`mandarons/icloud-docker` + four upstream PRs, pre-merge.** Same project, same Dockerfile, same entrypoint — plus four user-facing improvements I've submitted as separate PRs. While those PRs are in review, this image gets you the fixes today.
+> **[`mandarons/icloud-docker`](https://github.com/mandarons/icloud-docker) with my pending upstream PRs already applied.** Use it while those PRs are in review; switch back to upstream the moment they merge.
 
 ```bash
 docker pull ghcr.io/epheterson/icloud-docker-plus:latest
 ```
 
-**Not a competitor or fork-with-different-vision.** [`mandarons/icloud-docker`](https://github.com/mandarons/icloud-docker) is the project; this image just ships my six [open PRs](#how-the-image-is-composed-provenance) (2 to `icloudpy` + 4 to `icloud-docker`) pre-merge. Every line is openly submitted upstream and this repo + image will be archived the moment they land there. Switch back to `mandarons/icloud-drive:latest` then — your config and on-disk files keep working unchanged.
+Same Dockerfile, same entrypoint, same config schema as upstream — just six [pending PRs](#how-the-image-is-composed-provenance) layered in (2 to `icloudpy` + 4 to `icloud-docker`). When upstream merges, this repo + image archive and you point `:image:` at `mandarons/icloud-drive:latest`. Config and on-disk files keep working unchanged.
 
 ---
 
@@ -63,11 +63,22 @@ photos:
   filters:
     file_sizes:
       - original
+    # No `libraries` filter? Means sync ALL libraries on your Apple ID —
+    # your personal (PrimarySync) AND iCloud Shared Photo Library
+    # (SharedLibrary) if you have it enabled at icloud.com/photos.
+    # To restrict, list them explicitly:
+    #   libraries:
+    #     - PrimarySync       # your own library only
+    #     - SharedLibrary     # shared library only
+    # By default they all dump to photos.destination/ — see
+    # library_destinations below to separate them into subdirs.
 
 drive:
   destination: drive
   sync_interval: 43200
 ```
+
+**iCloud Shared Photo Library is on by default** — if your Apple ID has it enabled, this container picks it up automatically. No config change needed. (Want to OPT OUT and keep it personal-only? Add `libraries: [PrimarySync]` under `filters`.)
 
 Then:
 
