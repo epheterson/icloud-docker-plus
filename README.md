@@ -442,7 +442,7 @@ Fix in progress as a separate upstream PR. Until it lands, expect noisy `drive_p
 
 ## How the image is composed (provenance)
 
-This image is built from a fork of `mandarons/icloud-docker` whose `requirements.txt` pins a fork of `mandarons/icloudpy`. Nine pending upstream PRs:
+This image is built from a fork of `mandarons/icloud-docker` whose `requirements.txt` pins a fork of `mandarons/icloudpy`. Ten pending upstream PRs (2 to `icloudpy` + 8 to `icloud-docker`):
 
 ### To `mandarons/icloudpy` (the underlying iCloud Python library)
 1. [`fix/ios-26.4-auth`](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth) — iOS 26.4 SRP auth fix
@@ -464,9 +464,9 @@ The combined branches for the actual build are [`epheterson/icloudpy@combined/al
 
 ## Lifecycle / when to stop using this
 
-This repo + image are a **bridge**. When the four mandarons/icloud-docker PRs merge upstream and mandarons publishes a release that pulls them in, switch back to vanilla `mandarons/icloud-drive:latest`. All your config + on-disk files keep working.
+This repo + image are a **bridge**. When the eight mandarons/icloud-docker PRs (plus the two icloudpy PRs) merge upstream and mandarons publishes a release that pulls them in, switch back to vanilla `mandarons/icloud-drive:latest`. All your config + on-disk files keep working.
 
-This README will be updated with "✅ Upstream has merged X" markers as each PR lands. When all four are merged, the README will say "Archived — use upstream."
+This README will be updated with "✅ Upstream has merged X" markers as each PR lands. When all ten are merged, the README will say "Archived — use upstream."
 
 ---
 
@@ -474,6 +474,8 @@ This README will be updated with "✅ Upstream has merged X" markers as each PR 
 
 | Version | Date | Notes |
 |---|---|---|
+| `0.6.7` | 2026-05-28 | `--dry-run --check-files N` extension to PR 7: walks N photos per library, reports `would_skip` / `size_mismatch` / `not_found` counts. The recommended pre-flight for boredazfcuk→mandarons migration. Plus `SharedLibrary` alias matches Apple's GUID-named shared zones (e.g. `SharedSync-3C97...`), and entrypoint always chowns the new `/config/python_keyring` dir. README now documents memory sizing rules + the iWork-package re-download caveat. |
+| `0.6.6` | 2026-05-28 | Web-UI hardening for behind-proxy deployments: ProxyFix middleware, `Cache-Control: no-store`, `threaded=True`. Test fixture restores `ENV_CONFIG_FILE_PATH` so the test suite doesn't bleed env state across cases. |
 | `0.6.5` | 2026-05-28 | Persist python-keyring at `/config/python_keyring/` (PR 10) so the keyring survives container recreate. Plus iterative web-UI polish: truthful auth-state pill, library_destinations on dashboard, "already signed in" view on `/auth`, ProxyFix + no-cache headers for behind-proxy behaviour. |
 | `0.6.0` | 2026-05-28 | Embedded web UI (PR 9): dashboard + on-device 2FA re-auth flow (Apple-leaning design, opt-in via `app.web_ui.enabled`) |
 | `0.5.0` | 2026-05-27 | New `--dry-run` CLI flag (PR 7) + opt-in `require_mount_marker` failsafe (PR 8) — safety net for fresh installs |
