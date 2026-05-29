@@ -379,7 +379,12 @@ Default is OFF for backward compatibility; existing setups see no behaviour chan
 
 ### `web_ui` — built-in dashboard + re-auth from your phone
 
-![Dashboard](docs/screenshots/dashboard.png)
+<table>
+<tr>
+<td width="65%"><img src="docs/screenshots/dashboard.png" alt="Dashboard (desktop)"></td>
+<td width="35%"><img src="docs/screenshots/dashboard-mobile.png" alt="Dashboard (mobile)"></td>
+</tr>
+</table>
 
 Opt-in via `app.web_ui.enabled: true`. When enabled, a Flask app starts on `:8080` inside the container alongside the sync loop.
 
