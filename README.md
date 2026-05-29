@@ -48,8 +48,11 @@ services:
       - /path/to/your/photos:/icloud/photos
       - /path/to/your/drive:/icloud/drive
     # See "Resource sizing" below — tune to your photo library size.
-    mem_limit: 4g
-    memswap_limit: 6g
+    # 8GB suits a typical 100K-photo iCloud library. Smaller libraries
+    # can use less; very large ones need more (mandarons peaks during
+    # the initial library enumeration, before downloads start).
+    mem_limit: 8g
+    memswap_limit: 12g
 ```
 
 `/path/to/icloud/config/config.yaml` — minimal:
@@ -415,16 +418,17 @@ What's NOT in v1 (deferred — open an issue if you want any of these):
 
 ### Resource sizing
 
-Photo libraries are the dominant memory pressure. mandarons holds asset metadata in memory while walking a library; on a 111K-photo library the Photos sync alone needs **~2-3 GB resident** during the initial scan, plus headroom for thumbnails and the existence check.
+Photo libraries are the dominant memory pressure. mandarons enumerates the entire library asset list in RAM before downloads start — for an 111K-photo library this peaks at **~4 GB RSS** (empirically measured: a 4 GB-capped container OOM-killed mid-enumeration; cgroup dmesg showed `total-vm:4270872kB anon-rss:4181524kB`).
 
 | Library size | `mem_limit` | `memswap_limit` |
 |---|---|---|
 | <10K photos | 1 GB | 2 GB |
 | 10–50K photos | 2 GB | 4 GB |
-| 50–150K photos (**default recommendation**) | 4 GB | 6 GB |
-| >150K photos | 6–8 GB | 2× mem |
+| 50–100K photos | 4 GB | 6 GB |
+| 100–150K photos (**default recommendation for typical iCloud users**) | 8 GB | 12 GB |
+| >150K photos | 12 GB | 2× mem |
 
-How to know you're undersized: container restarts with `Killed` in the logs mid-`Syncing All Photos`, and the next start re-runs Drive sync from scratch. On Linux, `dmesg | grep -i oom` confirms; on Synology, the container `inspect` shows `OOMKilled:true` until the next restart resets the flag.
+How to know you're undersized: container restarts with `Killed` in the logs mid-`Syncing All Photos`, and the next start re-runs Drive sync from scratch. On Linux, `dmesg | grep -i oom` is authoritative (look for `Memory cgroup out of memory`). Docker's own `OOMKilled` flag resets on container restart and is often misleading — trust dmesg.
 
 Drive sync is memory-light (linear walk per folder); Photos is the constraint. Once a sync has completed a full pass, steady-state memory is far lower — but you need the headroom for the initial backfill.
 
