@@ -418,14 +418,28 @@ What's NOT in v1 (deferred — open an issue if you want any of these):
 
 ### Resource sizing
 
-Photo libraries are the dominant memory pressure. mandarons enumerates the entire library asset list in RAM before downloads start — for an 111K-photo library this peaks at **~4 GB RSS** (empirically measured: a 4 GB-capped container OOM-killed mid-enumeration; cgroup dmesg showed `total-vm:4270872kB anon-rss:4181524kB`).
+**As of 0.6.8 (PR 12 streaming enumeration):**
+
+mandarons streams the album in fixed-size chunks (default 1000 tasks per chunk), so Photos sync memory is bounded by `chunk_size` rather than `len(album)`. For most libraries this is a non-issue:
+
+| Library size | `mem_limit` | `memswap_limit` |
+|---|---|---|
+| <50K photos | 512 MB | 1 GB |
+| 50–500K photos (**typical iCloud user**) | 1 GB | 2 GB |
+| >500K photos or running additional services in-container | 2 GB | 4 GB |
+
+Tune `photos.enumeration_chunk_size` in config.yaml if you have unusually heavy per-task metadata (Live Photos paired downloads, multiple `file_sizes`, etc.). Smaller chunks reduce peak memory; larger chunks amortize parallel-download overhead.
+
+**Before 0.6.8 (still applies if you're pinned to 0.6.7 or earlier, OR if upstream `mandarons/icloud-drive` is your image):**
+
+mandarons materialized the entire library asset list in RAM before downloads start — for an 111K-photo library this peaked at **~4 GB RSS** (empirically measured: a 4 GB-capped container OOM-killed mid-enumeration; cgroup dmesg showed `total-vm:4270872kB anon-rss:4181524kB`). Recommended caps:
 
 | Library size | `mem_limit` | `memswap_limit` |
 |---|---|---|
 | <10K photos | 1 GB | 2 GB |
 | 10–50K photos | 2 GB | 4 GB |
 | 50–100K photos | 4 GB | 6 GB |
-| 100–150K photos (**default recommendation for typical iCloud users**) | 8 GB | 12 GB |
+| 100–150K photos | 8 GB | 12 GB |
 | >150K photos | 12 GB | 2× mem |
 
 How to know you're undersized: container restarts with `Killed` in the logs mid-`Syncing All Photos`, and the next start re-runs Drive sync from scratch. On Linux, `dmesg | grep -i oom` is authoritative (look for `Memory cgroup out of memory`). Docker's own `OOMKilled` flag resets on container restart and is often misleading — trust dmesg.
@@ -442,13 +456,15 @@ Practical effect:
 - **No data loss** — the file is present at the target path, you can open it directly.
 - **Wasted bandwidth on every container restart** — mandarons re-downloads the file each time, because the "failed" flag prevents marking it as up-to-date.
 
-Fix in progress as a separate upstream PR. Until it lands, expect noisy `drive_package_processing.py :: Unhandled file type` lines for iWork/`.jmb`/etc files. Safe to ignore unless your Drive sync is dominated by these (large iWork archives), in which case bumping `mem_limit` doesn't help; only the upstream fix or removing those files from iCloud Drive does.
+**Fixed** in PR 11 (`fix/drive-package-single-file-bundles`) — `process_package()` now returns the local file path on unrecognised mime instead of `None`, and `drive_file_download.py` only treats `None` as failure. The bytes stay on disk as a flat bundle (which Keynote/Pages/etc. open fine) and the parallel-download counter reports them as successful.
+
+Note: the next-sync dedup may still trigger a re-download because `file_exists()` compares against `item.size` (the unpacked-contents size) which differs from the flat-archive size on disk. That's a follow-up fix; PR 11 alone removes the loud error logging and the misleading "0 successful, N failed" counter.
 
 ---
 
 ## How the image is composed (provenance)
 
-This image is built from a fork of `mandarons/icloud-docker` whose `requirements.txt` pins a fork of `mandarons/icloudpy`. Ten pending upstream PRs (2 to `icloudpy` + 8 to `icloud-docker`):
+This image is built from a fork of `mandarons/icloud-docker` whose `requirements.txt` pins a fork of `mandarons/icloudpy`. Twelve pending upstream PRs (2 to `icloudpy` + 10 to `icloud-docker`):
 
 ### To `mandarons/icloudpy` (the underlying iCloud Python library)
 1. [`fix/ios-26.4-auth`](https://github.com/epheterson/icloudpy/tree/fix/ios-26.4-auth) — iOS 26.4 SRP auth fix
@@ -463,6 +479,8 @@ This image is built from a fork of `mandarons/icloud-docker` whose `requirements
 8. [`feat/require-mount-marker`](https://github.com/epheterson/icloud-docker/tree/feat/require-mount-marker) — opt-in `.mounted` failsafe file requirement
 9. [`feat/web-ui`](https://github.com/epheterson/icloud-docker/tree/feat/web-ui) — embedded Flask dashboard + on-device 2FA re-auth flow
 10. [`feat/persist-keyring`](https://github.com/epheterson/icloud-docker/tree/feat/persist-keyring) — `XDG_DATA_HOME=/config` so the keyring survives container recreation
+11. [`fix/drive-package-single-file-bundles`](https://github.com/epheterson/icloud-docker/tree/fix/drive-package-single-file-bundles) — `process_package()` returns the local file path on unrecognised mime instead of `None` so iWork/JMG/etc files are no longer counted as failed downloads
+12. [`perf/streaming-photo-enumeration`](https://github.com/epheterson/icloud-docker/tree/perf/streaming-photo-enumeration) — chunked enumeration in `album_sync_orchestrator` so Photos sync RSS stays bounded by `chunk_size` instead of `len(album)` (kernel-confirmed OOM at 4 GB on a 111K-photo library before this PR; bounded at ~200 MB after)
 
 The combined branches for the actual build are [`epheterson/icloudpy@combined/all-fixes`](https://github.com/epheterson/icloudpy/tree/combined/all-fixes) and [`epheterson/icloud-docker@combined/all-features`](https://github.com/epheterson/icloud-docker/tree/combined/all-features).
 
@@ -470,9 +488,9 @@ The combined branches for the actual build are [`epheterson/icloudpy@combined/al
 
 ## Lifecycle / when to stop using this
 
-This repo + image are a **bridge**. When the eight mandarons/icloud-docker PRs (plus the two icloudpy PRs) merge upstream and mandarons publishes a release that pulls them in, switch back to vanilla `mandarons/icloud-drive:latest`. All your config + on-disk files keep working.
+This repo + image are a **bridge**. When the ten mandarons/icloud-docker PRs (plus the two icloudpy PRs) merge upstream and mandarons publishes a release that pulls them in, switch back to vanilla `mandarons/icloud-drive:latest`. All your config + on-disk files keep working.
 
-This README will be updated with "✅ Upstream has merged X" markers as each PR lands. When all ten are merged, the README will say "Archived — use upstream."
+This README will be updated with "✅ Upstream has merged X" markers as each PR lands. When all twelve are merged, the README will say "Archived — use upstream."
 
 ---
 
@@ -480,6 +498,7 @@ This README will be updated with "✅ Upstream has merged X" markers as each PR 
 
 | Version | Date | Notes |
 |---|---|---|
+| `0.6.8` | 2026-05-29 | PR 11 (`fix/drive-package-single-file-bundles`): iWork / JMG / similar Drive bundles no longer counted as failed downloads when libmagic can't identify the archive type. PR 12 (`perf/streaming-photo-enumeration`): chunked enumeration bounds Photos sync RSS by `chunk_size` rather than `len(album)` — `mem_limit` requirement for 100K+ libraries drops back to ~2 GB. Plus `--dry-run --check-files` extended to walk iCloud Drive as well as Photos. Plus the suite passes on macOS dev hosts (24 pre-existing FileNotFoundError failures fixed by `ICLOUD_DOCKER_CONFIG_DIR` env override + conftest tempdir redirect). |
 | `0.6.7` | 2026-05-28 | `--dry-run --check-files N` extension to PR 7: walks N photos per library, reports `would_skip` / `size_mismatch` / `not_found` counts. The recommended pre-flight for boredazfcuk→mandarons migration. Plus `SharedLibrary` alias matches Apple's GUID-named shared zones (e.g. `SharedSync-3C97...`), and entrypoint always chowns the new `/config/python_keyring` dir. README now documents memory sizing rules + the iWork-package re-download caveat. |
 | `0.6.6` | 2026-05-28 | Web-UI hardening for behind-proxy deployments: ProxyFix middleware, `Cache-Control: no-store`, `threaded=True`. Test fixture restores `ENV_CONFIG_FILE_PATH` so the test suite doesn't bleed env state across cases. |
 | `0.6.5` | 2026-05-28 | Persist python-keyring at `/config/python_keyring/` (PR 10) so the keyring survives container recreate. Plus iterative web-UI polish: truthful auth-state pill, library_destinations on dashboard, "already signed in" view on `/auth`, ProxyFix + no-cache headers for behind-proxy behaviour. |
