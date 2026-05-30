@@ -6,7 +6,7 @@
 docker pull ghcr.io/epheterson/icloud-docker-plus:latest
 ```
 
-Same Dockerfile, same entrypoint, same config schema as upstream — just six [pending PRs](#how-the-image-is-composed-provenance) layered in (2 to `icloudpy` + 4 to `icloud-docker`). When upstream merges, this repo + image archive and you point `:image:` at `mandarons/icloud-drive:latest`. Config and on-disk files keep working unchanged.
+Same Dockerfile, same entrypoint, same config schema as upstream — just [thirteen pending PRs](#how-the-image-is-composed-provenance) layered in (2 to `icloudpy` + 11 to `icloud-docker`). When upstream merges, this repo + image archive and you point `:image:` at `mandarons/icloud-drive:latest`. Config and on-disk files keep working unchanged.
 
 ---
 
@@ -496,7 +496,7 @@ The combined branches for the actual build are [`epheterson/icloudpy@combined/al
 
 ## Lifecycle / when to stop using this
 
-This repo + image are a **bridge**. When the eleven mandarons/icloud-docker PRs (plus the two icloudpy PRs) merge upstream and mandarons publishes a release that pulls them in, switch back to vanilla `mandarons/icloud-drive:latest`. All your config + on-disk files keep working.
+This repo + image are a **bridge**. When the thirteen pending PRs (11 in `mandarons/icloud-docker` + 2 in `mandarons/icloudpy`) merge upstream and mandarons publishes a release that pulls them in, switch back to vanilla `mandarons/icloud-drive:latest`. All your config + on-disk files keep working.
 
 This README will be updated with "✅ Upstream has merged X" markers as each PR lands. When all thirteen are merged, the README will say "Archived — use upstream."
 
