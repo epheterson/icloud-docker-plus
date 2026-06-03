@@ -25,10 +25,11 @@ I wanted iCloud Shared Photo Library + iCloud Drive backed up to my NAS without 
 | `--dry-run` pre-flight | none | authenticate + summarize, no writes |
 | Bind-mount failsafe | none | opt-in `.mounted` marker (every library subdir, not just root) |
 | Keyring across `compose recreate` | wiped, full re-auth every time | persists in `/config` *(merged upstream — [#460](https://github.com/mandarons/icloud-docker/pull/460))* |
+| Peak RAM on 100k+ libraries | grows with library size (OOM risk) | **enumeration streamed in chunks** — bounded RSS (<1 GB on ~111k) |
 
 Plus smaller fixes: iWork/JMG package downloads no longer count as failures; zip bundles with bare-rooted entries don't clobber siblings; the test suite runs on macOS dev hosts *(merged upstream — [#455](https://github.com/mandarons/icloud-docker/pull/455))*.
 
-> **Memory note:** a large (100k+) photo library can still spike RAM during album enumeration — set `mem_limit` accordingly (≈4 GB for ~100k photos, more for bigger libraries). icloudpy 0.9.0 ships the bounded-memory *primitive* (`iter_chunks`, [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) — merged), but the icloud-docker *consumer* rework that would use it to stream album enumeration isn't built yet ([#462](https://github.com/mandarons/icloud-docker/pull/462) was closed/superseded), so this image still loads the full album list into memory.
+> **Memory note:** this image **streams album enumeration in fixed-size chunks** (`photos.enumeration_chunk_size`, default 1000) — peak RAM is bounded by the chunk, not the library size. Empirically <1 GB resident through a full ~111k-photo enumeration, so a modest `mem_limit` (1–2 GB) is plenty; you don't size it to the library. This consumer rework ships **here** but isn't upstream — icloud-docker [#462](https://github.com/mandarons/icloud-docker/pull/462) was closed, so vanilla `mandarons/icloud-docker` still loads the whole album into RAM. (icloudpy 0.9.0 also exposes the `iter_chunks` primitive, [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) — merged.)
 
 ## Quick start
 
@@ -47,7 +48,7 @@ services:
       - ./config:/config
       - /path/to/photos:/icloud/photos
       - /path/to/drive:/icloud/drive
-    mem_limit: 4g     # large libraries spike during enumeration (no streaming fix yet — see #462)
+    mem_limit: 2g     # enumeration is streamed in chunks (photos.enumeration_chunk_size) — RAM stays bounded
 ```
 
 Minimal `config/config.yaml`:
@@ -177,7 +178,7 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#463](https://github.com/mandarons/icloud-docker/pull/463) | `require_mount_marker` failsafe | 🔄 open |
 | [#464](https://github.com/mandarons/icloud-docker/pull/464) | embedded web UI | 🔄 open |
 | [#465](https://github.com/mandarons/icloud-docker/pull/465) | Live Photo `.mov` via `file_sizes` | 🔄 open |
-| [#462](https://github.com/mandarons/icloud-docker/pull/462) | streaming photo enumeration (bounds peak RSS) | ❌ closed — superseded by icloudpy#140; consumer rework pending |
+| [#462](https://github.com/mandarons/icloud-docker/pull/462) | streaming photo enumeration (bounds peak RSS) | ❌ closed upstream — but the consumer rework **ships in this image** (chunked enumeration via `photos.enumeration_chunk_size`); not yet resubmitted upstream |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code), and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
 
