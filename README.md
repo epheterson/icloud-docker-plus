@@ -28,7 +28,7 @@ I wanted iCloud Shared Photo Library + iCloud Drive backed up to my NAS without 
 
 Plus smaller fixes: iWork/JMG package downloads no longer count as failures; zip bundles with bare-rooted entries don't clobber siblings; the test suite runs on macOS dev hosts *(merged upstream — [#455](https://github.com/mandarons/icloud-docker/pull/455))*.
 
-> **Memory note:** a large (100k+) photo library can still spike RAM during album enumeration — set `mem_limit` accordingly (≈4 GB for ~100k photos). The streaming/bounded-memory rework ([#462](https://github.com/mandarons/icloud-docker/pull/462)) is **not yet merged**; this image does not include it.
+> **Memory note:** a large (100k+) photo library can still spike RAM during album enumeration — set `mem_limit` accordingly (≈4 GB for ~100k photos, more for bigger libraries). icloudpy 0.9.0 ships the bounded-memory *primitive* (`iter_chunks`, [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) — merged), but the icloud-docker *consumer* rework that would use it to stream album enumeration isn't built yet ([#462](https://github.com/mandarons/icloud-docker/pull/462) was closed/superseded), so this image still loads the full album list into memory.
 
 ## Quick start
 
