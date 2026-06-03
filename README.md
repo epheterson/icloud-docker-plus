@@ -1,6 +1,6 @@
 # icloud-docker-plus
 
-A drop-in `mandarons/icloud-docker` image with iOS 26.4 auth working, Live Photo `.mov` pairs landing on disk, per-library destinations, an opt-in web UI for re-authentication from your phone, and nine other improvements I needed for my own ~70 000-photo iCloud library running on a Synology NAS.
+A drop-in `mandarons/icloud-docker` image with iOS 26.4+ auth working, **2FA re-authentication from Telegram** (reply from your phone, no shell, no exposed web server), Live Photo `.mov` pairs, per-library destinations, fully templatable filenames, and a dozen other fixes I needed for my own ~70 000-photo iCloud library on a Synology NAS.
 
 ```bash
 docker pull ghcr.io/epheterson/icloud-docker-plus:latest
@@ -10,23 +10,25 @@ Same Dockerfile, same entrypoint, same config schema as upstream. Every new feat
 
 ## Why this exists
 
-I wanted iCloud Shared Photo Library + iCloud Drive backed up to my NAS without standing up yet another auth flow per library. Two `boredazfcuk/docker-icloudpd` containers (one per library, each with its own 2FA setup, no Drive at all) wasn't it. `mandarons/icloud-docker` was the right shape — one auth, all libraries, Drive included — so I migrated, hit a string of papercuts (iOS 26.4 broke auth entirely, Live Photos dropped the `.mov`, Personal and Shared dumped into the same tree, …), and fixed them. Putting the result here in case someone else is looking for the same thing.
+I wanted iCloud Shared Photo Library + iCloud Drive backed up to my NAS without standing up yet another auth flow per library. Two `boredazfcuk/docker-icloudpd` containers (one per library, each with its own 2FA setup, no Drive at all) wasn't it. `mandarons/icloud-docker` was the right shape — one auth, all libraries, Drive included — so I migrated, hit a string of papercuts (iOS 26.4 broke auth entirely, Live Photos dropped the `.mov`, Personal and Shared dumped into the same tree, no way to re-auth a headless box without a shell…), and fixed them. Putting the result here in case someone else is looking for the same thing.
 
 ## What's new vs upstream
 
 | | upstream | here |
 |---|---|---|
-| iOS 26.4+ trusted-device 2FA | broken ([#426](https://github.com/mandarons/icloud-docker/issues/426), open since Apr 2026) | works |
-| Live Photo `.mov` pair | dropped ([#199](https://github.com/mandarons/icloud-docker/issues/199), open since Mar 2024) | downloads alongside the HEIC |
+| iOS 26.4+ trusted-device 2FA | stalls, no code ([#426](https://github.com/mandarons/icloud-docker/issues/426)) | pushes a code & completes — fixed in icloudpy 0.9.0 |
+| Re-auth a headless box | shell in and run the CLI by hand | **reply `auth` + the 6-digit code in Telegram** — or the CLI, or the web UI |
+| Live Photo `.mov` pair | dropped ([#199](https://github.com/mandarons/icloud-docker/issues/199)) | add `live_video_original` to `file_sizes` |
+| Filenames | fixed `name__filesize__id.ext` | `simple` mode **or** a full `file_format` template (`${photo.*}` tokens) |
 | Per-library subdirs (Personal vs Shared) | one shared tree | `photos.library_destinations` |
-| Migrate from boredazfcuk without re-download | not possible | `filename_format: simple` + size-based dedup |
+| Migrate from boredazfcuk without re-download | not possible | `filename_format: simple` / matching `file_format` + size-based dedup |
 | `--dry-run` pre-flight | none | authenticate + summarize, no writes |
 | Bind-mount failsafe | none | opt-in `.mounted` marker (every library subdir, not just root) |
-| Web UI for on-device re-auth | `EXPOSE 80` in the Dockerfile, no server bound to it | opt-in Flask app on `:8080` |
-| Keyring across `compose recreate` | wiped, full re-auth every time | persists in `/config` |
-| Photos sync memory on 100k+ libraries | kernel-OOMs at 4 GB | bounded at ~280 MB |
+| Keyring across `compose recreate` | wiped, full re-auth every time | persists in `/config` *(merged upstream — [#460](https://github.com/mandarons/icloud-docker/pull/460))* |
 
-Plus three smaller fixes: iWork/JMG package downloads no longer count as failures; zip bundles with bare-rooted entries don't clobber siblings; test suite passes on macOS dev hosts.
+Plus smaller fixes: iWork/JMG package downloads no longer count as failures; zip bundles with bare-rooted entries don't clobber siblings; the test suite runs on macOS dev hosts *(merged upstream — [#455](https://github.com/mandarons/icloud-docker/pull/455))*.
+
+> **Memory note:** a large (100k+) photo library can still spike RAM during album enumeration — set `mem_limit` accordingly (≈4 GB for ~100k photos). The streaming/bounded-memory rework ([#462](https://github.com/mandarons/icloud-docker/pull/462)) is **not yet merged**; this image does not include it.
 
 ## Quick start
 
@@ -45,7 +47,7 @@ services:
       - ./config:/config
       - /path/to/photos:/icloud/photos
       - /path/to/drive:/icloud/drive
-    mem_limit: 1g     # ample for most libraries since PR 12 (streaming enum)
+    mem_limit: 4g     # large libraries spike during enumeration (no streaming fix yet — see #462)
 ```
 
 Minimal `config/config.yaml`:
@@ -62,14 +64,43 @@ photos: { destination: photos, sync_interval: 43200 }
 drive:  { destination: drive,  sync_interval: 43200 }
 ```
 
-Then:
+Then authenticate (first run, and whenever the ~90-day trust lapses):
 
 ```bash
 docker compose up -d
 docker exec -it icloud sh -c "icloud --username=you@apple.example --session-directory=/config/session_data"
-# enter password + 6-digit 2FA code from your trusted device
+# On icloudpy 0.9.0 this pushes a 6-digit code to your trusted devices; enter it + your password.
 docker logs -f icloud
 ```
+
+Prefer not to shell in every 90 days? See **Re-authentication** below.
+
+## Re-authentication
+
+iCloud trust lapses about every 90 days. Three ways to complete the 2FA, pick whichever fits:
+
+### Telegram (headless — reply from your phone)
+
+No exposed web server, no shell. Set a bot token + chat id and turn on `listen`:
+
+```yaml
+app:
+  telegram:
+    bot_token: <your bot token>
+    chat_id: <your chat id>
+    listen: true          # poll for replies during a 2FA wait
+    auth_keyword: auth     # the word that triggers the push (default "auth")
+```
+
+When re-auth is needed the container messages your chat. Reply **`auth`** → Apple pushes a 6-digit code to your devices → reply the **code** → sync resumes. Codes tolerate spaces (`123 456`). Use a 1:1 chat with the bot; for multiple containers give each its own bot token + a distinct `auth_keyword`.
+
+### CLI
+
+`docker exec -it icloud sh -c "icloud --username=… --session-directory=/config/session_data"` — on icloudpy 0.9.0 this pushes a code and prompts for it. (China: add `--region=china`.)
+
+### Web UI
+
+Opt-in `app.web_ui.enabled: true` — Flask app on `:8080` with a dashboard + `/auth` re-auth flow. **No built-in login** — put it behind Cloudflare Access, Tailscale, or your own auth proxy; don't expose it bare.
 
 ## Migration
 
@@ -84,7 +115,7 @@ docker logs -f icloud
 
 1. Stop your existing boredazfcuk container(s) — leave them stopped, don't `rm` (easy rollback).
 2. Mount the parent of your existing per-library dirs at `/icloud/photos`.
-3. In `config.yaml`, set `filename_format: simple` (matches boredazfcuk's plain `IMG_1234.HEIC`) and `library_destinations` mapping each iCloud library to your existing subdir name:
+3. Set a filename scheme that **reproduces your existing names** so dedup-by-size recognizes them — either `filename_format: simple` (plain `IMG_1234.HEIC`) or an equivalent `file_format` (see below) — plus `library_destinations` mapping each iCloud library to your existing subdir:
 
    ```yaml
    photos:
@@ -94,13 +125,13 @@ docker logs -f icloud
        SharedLibrary: Shared      # ← your existing Shared dir name
    ```
 
-4. Before letting the sync loop touch anything, run the pre-flight:
+4. Pre-flight before the sync loop touches anything:
 
    ```bash
    docker exec -it icloud python /app/src/main.py --dry-run --check-files 200
    ```
 
-   It walks 200 photos per library + 200 Drive files, reports per-service `would_skip` / `size_mismatch` / `not_found` counts. If `would_skip` dominates, the dedup-by-size will recognize your existing files and nothing re-downloads. If `not_found` dominates, your paths don't line up — fix before letting the real sync run.
+   It walks 200 **photos** per library and reports per-library `would_skip` / `size_mismatch` / `not_found`. If `would_skip` dominates, dedup-by-size will recognize your existing files and nothing re-downloads. If `not_found` dominates, your paths don't line up — fix before the real run. *(Drive-side `--check-files` is photos-only today — [#459](https://github.com/mandarons/icloud-docker/pull/459).)*
 
 5. `docker compose up -d` and watch the logs. Existing files log `No changes detected. Skipping`; only genuine new items download.
 
@@ -108,59 +139,60 @@ docker logs -f icloud
 
 All under `photos:` unless noted. All optional, all default-OFF.
 
-- `library_destinations: {PrimarySync: personal, SharedLibrary: shared}` — each iCloud library gets its own subdir of `photos.destination`. The `SharedLibrary` alias matches Apple's GUID-named shared zones (`SharedSync-…`) so you don't have to hardcode your GUID.
-- `filename_format: simple` — plain `IMG_1234.HEIC` instead of `IMG_1234__original__<base64id>.HEIC`. Collision-safe (falls back to the suffix form when two photos share a name). **Pick at install time — can't change after files exist.**
-- `preserve_originals_as_bak: true` — when both `original` and `original_alt` are in `file_sizes`, edited photos write the unmodified version as `.HEIC.original.bak` so it stays out of Plex / Photos.app / Synology Photos.
-- `require_mount_marker: true` — refuse to sync unless a `.mounted` file exists in every destination. With `library_destinations` the marker is required in each subdir too — the whole point of per-library subdirs is usually separate bind mounts, and any one of them could be the failed mount.
-- `app.web_ui.enabled: true` — opt-in Flask app on `:8080` for dashboard + on-device 2FA re-auth.
+- **`library_destinations: {PrimarySync: personal, SharedLibrary: shared}`** — each iCloud library gets its own subdir of `photos.destination`. `SharedLibrary` matches Apple's GUID-named shared zones (`SharedSync-…`) so you don't hardcode your GUID.
+- **`filename_format: simple`** — plain `IMG_1234.HEIC` instead of `IMG_1234__original__<base64id>.HEIC`. Collision-safe (falls back to the suffix form when two photos share a name). Lets you migrate from boredazfcuk without re-downloading. **Pick at install time.**
+- **`file_format`** — a single filename template applied to every version (the filename sibling of `folder_format`), overriding `filename_format` when set. Tokens: `${photo.filename}` `${photo.ext}` `${photo.id}` `${photo.file_size}` `${photo.year}` `${photo.month}` `${photo.day}`, plus variant tokens that are **empty for `original`/`full`** and the version name otherwise: `${photo.variant}` (bare) and `${photo.variant_suffix}` (a separator + variant, emitted *only* when there is a variant, so originals stay un-suffixed). Separator via `variant_separator` (default `_`). Example that keeps plain Apple names for originals (so an existing library isn't re-downloaded) but tags variants:
+  ```yaml
+  photos:
+    file_format: "${photo.filename}${photo.variant_suffix}.${photo.ext}"   # IMG_1234.HEIC ; IMG_1234_medium.JPG
+  ```
+  A templated name that collides falls back to the unique metadata name.
+- **Live Photo `.mov`** — add `live_video_original` (and/or `live_video_medium` / `live_video_thumb`) to `photos.filters.file_sizes`. Non-Live-Photos lack those versions and are skipped quietly.
+- **`require_mount_marker: true`** — refuse to sync unless a `.mounted` file exists in every destination (each `library_destinations` subdir too — any one could be the failed mount).
+- **`preserve_originals_as_bak`** *(being reshaped — [#458](https://github.com/mandarons/icloud-docker/pull/458))* — keeps the unmodified original of an edited photo on disk but hidden from Plex/Photos.app/Synology Photos. Per maintainer feedback this is moving to an `original:hidden` marker inside `file_sizes` rather than a standalone flag; check the PR for the current shape.
 
-Live Photo `.mov` pair downloads automatically when `original` is in `file_sizes` (no config needed). Naming follows whichever `filename_format` you chose.
+## PRs feeding this image — status
 
-## Web UI
+Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/mandarons/icloudpy/issues/137)):
 
-<table>
-<tr>
-<td width="60%"><img src="docs/screenshots/dashboard.png" alt="Dashboard"></td>
-<td width="40%"><img src="docs/screenshots/dashboard-mobile.png" alt="Mobile dashboard"></td>
-</tr>
-</table>
+| PR | what | status |
+|---|---|---|
+| [icloudpy#138](https://github.com/mandarons/icloudpy/pull/138) | iOS 26.4+ 2FA push trigger | ✅ merged (in 0.9.0) |
+| [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) | Live Photo `.mov` via `live_video_*` keys | ✅ merged (in 0.9.0) |
+| [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) | `iter_chunks` (bounded-memory enumeration primitive) | ✅ merged (in 0.9.0) |
 
-Opt-in via `app.web_ui.enabled: true`. Dashboard shows current Apple ID, per-service mount-marker status, sync intervals, last 200 log lines. `/auth` does the full re-authentication flow from your phone. **No built-in login** — put it behind Cloudflare Tunnel + Authelia, Tailscale, or your own auth proxy. Don't expose it bare to the public internet.
+In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
-## Open PRs
+| PR | what | status |
+|---|---|---|
+| [#455](https://github.com/mandarons/icloud-docker/pull/455) | test suite green on macOS/sandbox dev hosts | ✅ merged |
+| [#460](https://github.com/mandarons/icloud-docker/pull/460) | persist python-keyring across container recreate | ✅ merged |
+| [#471](https://github.com/mandarons/icloud-docker/pull/471) | bump icloudpy → 0.9.0 (the universal 2FA-push fix; also fixes the CLI flow) | 🔄 open |
+| [#470](https://github.com/mandarons/icloud-docker/pull/470) | complete 2FA from Telegram (optional, headless) | 🔄 open |
+| [#456](https://github.com/mandarons/icloud-docker/pull/456) | `photos.library_destinations` | 🔄 open |
+| [#457](https://github.com/mandarons/icloud-docker/pull/457) | `filename_format: simple` + `file_format` templates | 🔄 open |
+| [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos (reshaping to `original:hidden`) | 🔄 open |
+| [#459](https://github.com/mandarons/icloud-docker/pull/459) | `--dry-run` pre-flight | 🔄 open |
+| [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) | 🔄 open |
+| [#463](https://github.com/mandarons/icloud-docker/pull/463) | `require_mount_marker` failsafe | 🔄 open |
+| [#464](https://github.com/mandarons/icloud-docker/pull/464) | embedded web UI | 🔄 open |
+| [#465](https://github.com/mandarons/icloud-docker/pull/465) | Live Photo `.mov` via `file_sizes` | 🔄 open |
+| [#462](https://github.com/mandarons/icloud-docker/pull/462) | streaming photo enumeration (bounds peak RSS) | ❌ closed — superseded by icloudpy#140; consumer rework pending |
 
-The 13 PRs feeding this image, in dependency order:
+> **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code), and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
 
-**To `mandarons/icloudpy`** — RFC: [icloudpy#137](https://github.com/mandarons/icloudpy/issues/137)
-1. [icloudpy#138](https://github.com/mandarons/icloudpy/pull/138) — iOS 26.4 SRP auth
-2. [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) — Live Photo `.mov` via new `live_video_*` keys
-
-**To `mandarons/icloud-docker`** — RFC: [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)
-
-3. [icloud-docker#456](https://github.com/mandarons/icloud-docker/pull/456) — `photos.library_destinations`
-4. [icloud-docker#465](https://github.com/mandarons/icloud-docker/pull/465) — auto-download Live Photo `.mov` pair *(depends on icloudpy#139)*
-5. [icloud-docker#457](https://github.com/mandarons/icloud-docker/pull/457) — `photos.filename_format: simple`
-6. [icloud-docker#458](https://github.com/mandarons/icloud-docker/pull/458) — `photos.preserve_originals_as_bak`
-7. [icloud-docker#459](https://github.com/mandarons/icloud-docker/pull/459) — `--dry-run` CLI flag
-8. [icloud-docker#463](https://github.com/mandarons/icloud-docker/pull/463) — `require_mount_marker` failsafe
-9. [icloud-docker#464](https://github.com/mandarons/icloud-docker/pull/464) — embedded web UI
-10. [icloud-docker#460](https://github.com/mandarons/icloud-docker/pull/460) — persist `python-keyring` across container recreates
-11. [icloud-docker#461](https://github.com/mandarons/icloud-docker/pull/461) — Drive package single-file bundles (iWork, JMG)
-12. [icloud-docker#462](https://github.com/mandarons/icloud-docker/pull/462) — streaming photo enumeration (bounds peak RSS)
-13. [icloud-docker#455](https://github.com/mandarons/icloud-docker/pull/455) — test suite green baseline (recommended FIRST so the others review against a clean suite)
-
-Combined branches for testing the full stack: [`epheterson/icloudpy@combined/all-fixes`](https://github.com/epheterson/icloudpy/tree/combined/all-fixes) + [`epheterson/icloud-docker@combined/all-features`](https://github.com/epheterson/icloud-docker/tree/combined/all-features).
+This image is built from [`epheterson/icloud-docker@combined/all-features`](https://github.com/epheterson/icloud-docker/tree/combined/all-features) — every open PR above merged — on top of the released `icloudpy==0.9.0`. (The [`epheterson/icloudpy@combined/all-fixes`](https://github.com/epheterson/icloudpy/tree/combined/all-fixes) fork is no longer needed now that icloudpy#138/#139/#140 shipped in 0.9.0.)
 
 ## Lifecycle
 
-This is a bridge image. When the 13 PRs land in upstream releases, swap back to `mandarons/icloud-drive:latest` and your config + files keep working. This README will mark "✅ Upstream has merged" against each PR as it lands; when all 13 are in, the repo archives.
+This is a bridge image. As each PR lands in an upstream release the table above flips to ✅; when they're all in (or superseded), swap back to `mandarons/icloud-drive:latest` — your config + on-disk files keep working — and this repo archives.
 
 ## Acknowledgments
 
 Built on:
 - **[`mandarons/icloud-docker`](https://github.com/mandarons/icloud-docker)** + **[`mandarons/icloudpy`](https://github.com/mandarons/icloudpy)** by Mandar Patil — the foundation.
-- **[`boredazfcuk/docker-icloudpd`](https://github.com/boredazfcuk/docker-icloudpd)** — prior-art patterns ported into PRs 5, 7, 8, 10.
-- **[`icloud-photos-downloader`](https://github.com/icloud-photos-downloader/icloud_photos_downloader) ([PR #1335](https://github.com/icloud-photos-downloader/icloud_photos_downloader/pull/1335))** — the known-working iOS 26.4 SRP fix ported into PR 1.
+- **[`boredazfcuk/docker-icloudpd`](https://github.com/boredazfcuk/docker-icloudpd)** — prior-art patterns ported into several PRs (simple filenames, mount marker, package handling, keyring persistence).
+- **[`icloud-photos-downloader`](https://github.com/icloud-photos-downloader/icloud_photos_downloader)** — reference for the iOS 26.4 SRP auth fix.
 
 Questions or issues? [Open an issue](https://github.com/epheterson/icloud-docker-plus/issues) or submit a PR. For things that should land upstream, file with Mandar directly — these are his repos, I'm just shipping a bridge.
 
