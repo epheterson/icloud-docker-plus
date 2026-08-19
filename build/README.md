@@ -4,7 +4,7 @@ The published image is `ghcr.io/epheterson/icloud-docker-plus`. It is **not** a 
 
 ## Current state (2026-08-19)
 
-`0.9.3` is an **overlay** build: it layers the verified-live source files onto `0.9.2` rather than rebuilding from a merged tree. This exists because four of the six still-open branches conflict against the current upstream `main`, and that integration was not worth rushing onto a live system:
+`0.9.4` is an **overlay** build: it layers the verified-live source files onto `0.9.2` rather than rebuilding from a merged tree. This exists because four of the six still-open branches conflict against the current upstream `main`, and that integration was not worth rushing onto a live system:
 
 | Branch | PR | Merges onto `upstream/main` |
 | --- | --- | --- |
