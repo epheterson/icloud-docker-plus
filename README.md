@@ -1,6 +1,6 @@
 # icloud-docker-plus
 
-A drop-in `mandarons/icloud-docker` image with iOS 26.4+ auth working, **2FA re-authentication from Telegram** (reply from your phone, no shell, no exposed web server), Live Photo `.mov` pairs, per-library destinations, fully templatable filenames, and a dozen other fixes I needed for my own ~70 000-photo iCloud library on a Synology NAS.
+A drop-in `mandarons/icloud-docker` image that can actually re-authenticate itself. **Sign in with a hardware security key** — the only implementation I know of that works outside a browser — or reply to a Telegram message, or use the built-in web dashboard. Plus Live Photo `.mov` pairs, per-library destinations, templatable filenames, bounded memory on large libraries, and the fixes I needed for my own ~70 000-photo iCloud library on a Synology NAS.
 
 ```bash
 docker pull ghcr.io/epheterson/icloud-docker-plus:latest
@@ -17,7 +17,11 @@ I wanted iCloud Shared Photo Library + iCloud Drive backed up to my NAS without 
 | | upstream | here |
 |---|---|---|
 | iOS 26.4+ trusted-device 2FA | stalls, no code ([#426](https://github.com/mandarons/icloud-docker/issues/426)) | pushes a code & completes — fixed in icloudpy 0.9.0 |
-| Re-auth a headless box | shell in and run the CLI by hand | **reply `auth` + the 6-digit code in Telegram** — or the CLI, or the web UI |
+| Security key on the Apple ID | **cannot authenticate at all** — Apple stops sending codes and the container waits forever | **sign in with the key**: one touch, no PIN, no browser |
+| Re-auth a headless box | shell in and run the CLI by hand | **reply `auth` + the 6-digit code in Telegram** — or the key, the web UI, or the CLI |
+| Re-auth after a reboot | needed every time trust lapsed | trust token refreshed before it expires — restarts just resume |
+| Sign-in failures | uncaught, process exits, container restart-loops into Apple's rate limit | caught and backed off |
+| Log file | grows without bound (5.8 GB on a ~294k library) | rotates, 50 MB × 3 by default |
 | Live Photo `.mov` pair | dropped ([#199](https://github.com/mandarons/icloud-docker/issues/199)) | add `live_video_original` to `file_sizes` *(merged upstream — [#465](https://github.com/mandarons/icloud-docker/pull/465))* |
 | Filenames | fixed `name__filesize__id.ext` | `simple` mode **or** a full `file_format` template (`${photo.*}` tokens) |
 | Per-library subdirs (Personal vs Shared) | one shared tree | `photos.library_destinations` *(merged upstream — [#456](https://github.com/mandarons/icloud-docker/pull/456))* |
@@ -78,7 +82,13 @@ Prefer not to shell in every 90 days? See **Re-authentication** below.
 
 ## Re-authentication
 
-iCloud trust lapses about every 90 days. Three ways to complete the 2FA, pick whichever fits:
+iCloud trust lapses periodically — though this image refreshes the trust token before it expires, so in practice you should rarely see it. When you do, pick whichever fits:
+
+### Security key (if your Apple ID uses one)
+
+Once security keys are enrolled, Apple stops offering 6-digit codes entirely and returns a WebAuthn challenge instead — which is why every headless client, this one included, used to be locked out of such an account permanently.
+
+Open `/auth/security-key`, press **Get a challenge**, and it hands you a one-line command. Run it on whichever machine has the key, touch the key, paste the result back. One touch, no PIN, and the signing machine needs no route back to the container. The command carries the signer inline, never sees your password, never contacts Apple, and returns the signature via the clipboard rather than the screen.
 
 ### Telegram (headless — reply from your phone)
 
@@ -101,7 +111,9 @@ When re-auth is needed the container messages your chat. Reply **`auth`** → Ap
 
 ### Web UI
 
-Opt-in `app.web_ui.enabled: true` — Flask app on `:8080` with a dashboard + `/auth` re-auth flow. **No built-in login** — put it behind Cloudflare Access, Tailscale, or your own auth proxy; don't expose it bare.
+Opt-in `app.web_ui.enabled: true` — a dashboard on `:8080` showing per-service sync state, last-cycle counts, trust-window countdown and a log tail, with **Sync now** and the re-auth flows above. It tells you when sync is actually stopped rather than only when the config looks wrong.
+
+**No built-in login** — put it behind Cloudflare Access, Tailscale, or your own auth proxy; don't expose it bare.
 
 ## Migration
 
@@ -202,7 +214,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for what each release contains, and [`build/R
 
 ## Lifecycle
 
-This is a bridge image. As each PR lands in an upstream release the table above flips to ✅; when they're all in (or superseded), swap back to `mandarons/icloud-drive:latest` — your config + on-disk files keep working — and this repo archives.
+This is a bridge image. Everything here is offered upstream — the table above tracks each PR — and as they land the reasons to run this shrink. When they're all in or superseded, swap back to `mandarons/icloud-docker:latest`; your config and on-disk files keep working, and this repo archives.
 
 ## Acknowledgments
 
