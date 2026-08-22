@@ -2,22 +2,22 @@
 
 The published image is `ghcr.io/epheterson/icloud-docker-plus`. It is **not** a plain build of `epheterson/icloud-docker` — it is upstream `main` plus the feature branches that are still open as PRs against `mandarons/icloud-docker`.
 
-## Current state (2026-08-19)
+## Current state (2026-08-21)
 
-`0.9.4` is an **overlay** build: it layers the verified-live source files onto `0.9.2` rather than rebuilding from a merged tree. This exists because four of the six still-open branches conflict against the current upstream `main`, and that integration was not worth rushing onto a live system:
+`0.10.0` is an **overlay** build: it layers the verified-live source files onto `0.9.2` rather than rebuilding from a merged tree. This exists because four of the six still-open branches conflict against the current upstream `main`, and that integration was not worth rushing onto a live system:
 
 | Branch | PR | Merges onto `upstream/main` |
 | --- | --- | --- |
-| `fix/drive-bundle-redownload-loop` | #473 | clean |
 | `feat/photos-filename-format-simple` | #457 | clean |
-| `fix/2fa-trigger-push` | #486 | conflict — `src/sync.py` |
-| `fix/drive-package-single-file-bundles` | #461 | conflict — `src/drive_package_processing.py`, `src/drive_parallel_download.py`, tests |
-| `feat/photos-preserve-originals-as-bak` | #458 | conflict — `src/config_parser.py`, `src/photo_path_utils.py` |
-| `feat/telegram-2fa-clean` | #470 | conflict — `README.md`, `src/notify.py`, `src/sync.py` |
+| `feat/photos-preserve-originals-as-bak` | #458 | clean |
+| `fix/2fa-trigger-push` | #486 | conflict |
+| `fix/drive-bundle-redownload-loop` | #473 | conflict |
+| `fix/drive-package-single-file-bundles` | #461 | conflict |
+| `feat/telegram-2fa-clean` | #470 | conflict |
 
 Note `feat/web-ui` (#464) is **merged upstream**, so the web UI now comes from `main` and no longer needs merging in.
 
-## Rebuild (as done for 0.9.3)
+## Rebuild (as done for 0.10.0)
 
 Run on the NAS — it has docker but no buildx, and the NAS is the only amd64 host:
 

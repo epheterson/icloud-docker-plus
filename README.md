@@ -161,6 +161,7 @@ Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/m
 | [icloudpy#138](https://github.com/mandarons/icloudpy/pull/138) | iOS 26.4+ 2FA push trigger | ✅ merged (in 0.9.0) |
 | [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) | Live Photo `.mov` via `live_video_*` keys | ✅ merged (in 0.9.0) |
 | [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) | `iter_chunks` (bounded-memory enumeration primitive) | ✅ merged (in 0.9.0) |
+| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | open |
 
 In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
@@ -177,6 +178,7 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#463](https://github.com/mandarons/icloud-docker/pull/463) | `require_mount_marker` failsafe |
 | [#472](https://github.com/mandarons/icloud-docker/pull/472) | streaming photo enumeration (bounds peak RSS) — supersedes closed [#462](https://github.com/mandarons/icloud-docker/pull/462) |
 | [#456](https://github.com/mandarons/icloud-docker/pull/456) | `photos.library_destinations` — per-library subdirs |
+| [#464](https://github.com/mandarons/icloud-docker/pull/464) | embedded web UI — dashboard + on-device re-auth |
 
 **Open:**
 
@@ -187,12 +189,16 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#457](https://github.com/mandarons/icloud-docker/pull/457) | `filename_format: simple` + `file_format` templates |
 | [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos (reshaping to `original:hidden`) |
 | [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
-| [#464](https://github.com/mandarons/icloud-docker/pull/464) | embedded web UI — **approved**, awaiting merge |
 | [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
+| [#528](https://github.com/mandarons/icloud-docker/pull/528) | rotate the log file instead of growing without bound |
+| [#529](https://github.com/mandarons/icloud-docker/pull/529) | don't exit the process on non-2FA sign-in failures |
+| [#530](https://github.com/mandarons/icloud-docker/pull/530) | refresh the trust token before it expires |
+| [#531](https://github.com/mandarons/icloud-docker/pull/531) | dashboard auth state + mobile word-break fix |
+| *(held)* | sign in with a hardware security key — waiting on icloudpy#174 |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed; and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
 
-This image is built from [`epheterson/icloud-docker@combined/all-features`](https://github.com/epheterson/icloud-docker/tree/combined/all-features) — every open PR above merged into it — on top of the released `icloudpy==0.9.0`. (The [`epheterson/icloudpy@combined/all-fixes`](https://github.com/epheterson/icloudpy/tree/combined/all-fixes) fork is no longer needed now that icloudpy#138/#139/#140 shipped in 0.9.0.)
+See [`CHANGELOG.md`](CHANGELOG.md) for what each release contains, and [`build/README.md`](build/README.md) for how the image is assembled and which branches currently conflict against upstream `main`.
 
 ## Lifecycle
 
