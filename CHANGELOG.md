@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.10.2] — 2026-08-24
+
+### Fixed
+
+- **One unreadable photo library no longer stops the others.** An account can be shown libraries it never created — zones left behind by Apple's own backend migrations — and some answer every query with `ZONE_NOT_FOUND` or `BAD_REQUEST`. The library loop had no error handling, so one of those aborted the entire photos pass and every library after it in the list simply never synced — silently, for weeks, while the libraries processed earlier kept working. Each library is now isolated: the fault is logged, the library recorded, and the sync continues.
+- **Obsolete-file cleanup can no longer delete a library it could not read.** Cleanup deletes any local file absent from the set of files seen during the run, and a library that failed contributes nothing to that set — so continuing past a failure would read as "the server has none of these" and delete every local copy. Failed libraries are now excluded from cleanup, and when a single shared destination is configured, one failure disables cleanup entirely, because the file set cannot attribute a path to a library.
+- **Obsolete-file cleanup never runs against the shared photos root.** A library with no `library_destinations` entry falls through to the base destination by design, so per-library cleanup then walked the photos root — which holds every other library's tree, and anything else kept there. One unmapped library would have deleted all of them. Reached by doing nothing wrong, since Apple adds libraries to an account on its own and a mapping that was complete when written silently stops being complete.
+
 ## [0.10.1] — 2026-08-24
 
 ### Fixed
