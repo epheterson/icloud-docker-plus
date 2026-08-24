@@ -8,6 +8,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.10.1] — 2026-08-24
+
+### Fixed
+
+- **A service outage no longer masquerades as a sign-in failure.** The sync loop wraps authentication and the whole sync in one `try`, so any error raised during a download was reported as a sign-in failure and earned the rate-limit backoff — a shared library returning `ZONE_NOT_FOUND` told the user to re-authenticate an account that was signed in perfectly well. Failures are now routed on whether sign-in actually succeeded. Sent upstream as [#529](https://github.com/mandarons/icloud-docker/pull/529).
+- **A failed sync no longer re-enumerates the whole library every few minutes.** Every retry handler ends in `continue`, which skips the scheduler, so the countdown timers never advanced and both services stayed enabled — the short login-retry interval therefore repeated a full library walk. A post-sign-in failure now waits at least as long as the shortest configured sync interval: never poll a broken service faster than a working one. Sent upstream as [#529](https://github.com/mandarons/icloud-docker/pull/529).
+- **An unreadable `config.yaml` no longer becomes a restart loop.** `read_config` returns `None` when the file is missing, and a partial file may have no `app` section; both reached `config["app"]` unguarded — once from `get_logger()` at module scope, so the container died on import with a bare `TypeError` and never reported the real problem, and once from the sync loop's oneshot check. With `restart: unless-stopped` either one restarts forever. Reachable on any NAS boot where the volume holding the config lags behind the container. Logging now falls back to defaults and the loop waits for the file.
+
+### Changed
+
+- The security-key sign-in starts from the button on `/auth` instead of routing through an interstitial page. It remains a `POST`, so a bookmark or a link prefetch still cannot spend an Apple sign-in attempt.
+- Removed a stale "Unvalidated" notice that claimed no assertion had ever been accepted by Apple and pointed at a trust-token option that no longer exists.
+
 ## [0.10.0] — 2026-08-21
 
 ### Added
