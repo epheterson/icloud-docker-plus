@@ -203,9 +203,11 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
 | [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
 | [#528](https://github.com/mandarons/icloud-docker/pull/528) | rotate the log file instead of growing without bound |
-| [#529](https://github.com/mandarons/icloud-docker/pull/529) | don't exit the process on non-2FA sign-in failures |
+| [#529](https://github.com/mandarons/icloud-docker/pull/529) | don't exit the process on non-2FA sign-in failures; time out stalled drive downloads |
 | [#530](https://github.com/mandarons/icloud-docker/pull/530) | refresh the trust token before it expires |
 | [#531](https://github.com/mandarons/icloud-docker/pull/531) | dashboard auth state + mobile word-break fix |
+| [#534](https://github.com/mandarons/icloud-docker/pull/534) | one unreadable photo library must not stop the others |
+| [#535](https://github.com/mandarons/icloud-docker/pull/535) | refuse a mass obsolete-delete instead of performing it |
 | *(held)* | sign in with a hardware security key — waiting on icloudpy#174 |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed; and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
