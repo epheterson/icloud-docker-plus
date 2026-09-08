@@ -100,6 +100,7 @@ echo "==> verifying every orphan has an identical simple-format counterpart"
 : > "$WORK/review_no_counterpart.txt"
 : > "$WORK/review_size_differs.txt"
 : > "$WORK/review_unparseable.txt"
+: > "$WORK/heal_by_rename.tsv"
 
 # Map each orphan to the plain path it would occupy under `simple` naming.
 # Strip ONLY the trailing __<filesize>__<base64id> block -- filenames can
@@ -113,8 +114,12 @@ paste "$WORK/orphans.txt" "$WORK/expected_simple.txt" > "$WORK/pairs.tsv"
 awk -F'\t' '$1==$2' "$WORK/pairs.tsv" | cut -f1 > "$WORK/review_unparseable.txt"
 
 awk -F'\t' '$1!=$2' "$WORK/pairs.tsv" | while IFS=$'\t' read -r f simple; do
-  if [ ! -f "$simple" ]; then
-    printf '%s\n' "$f" >> "$WORK/review_no_counterpart.txt"
+  if [ ! -e "$simple" ]; then
+    # No counterpart AND the plain slot is free: this asset exists ONLY under
+    # its legacy name -- it never re-downloaded under the new scheme. Deleting
+    # it would lose the only copy. Rename it into the free slot instead, which
+    # both preserves it and lets the next sync recognise it by size.
+    printf '%s\t%s\n' "$f" "$simple" >> "$WORK/heal_by_rename.tsv"
   elif [ "$(stat -c%s "$f")" != "$(stat -c%s "$simple")" ]; then
     printf '%s\t%s\n' "$f" "$simple" >> "$WORK/review_size_differs.txt"
   else
@@ -126,12 +131,13 @@ safe=$(wc -l < "$WORK/safe_to_delete.txt")
 nocp=$(wc -l < "$WORK/review_no_counterpart.txt")
 diff=$(wc -l < "$WORK/review_size_differs.txt")
 unparse=$(wc -l < "$WORK/review_unparseable.txt")
+heal=$(wc -l < "$WORK/heal_by_rename.tsv")
 bytes=$(awk '{print}' "$WORK/safe_to_delete.txt" | tr '\n' '\0' | xargs -0 -r stat -c%s 2>/dev/null | awk '{s+=$1} END {print s+0}')
 
 echo
 echo "================ RESULT ================"
 printf 'SAFE to delete      : %8d files  (%.1f GB)\n' "$safe" "$(echo "$bytes" | awk '{print $1/1073741824}')"
-printf 'KEEP - no counterpart: %8d files\n' "$nocp"
+printf 'HEAL by rename       : %8d files  (only copy -- plain slot is free)\n' "$heal"
 printf 'KEEP - size differs  : %8d files\n' "$diff"
 printf 'KEEP - unparseable   : %8d files\n' "$unparse"
 echo "========================================"
@@ -143,6 +149,15 @@ if [ $APPLY -eq 0 ]; then
   exit 0
 fi
 
+if [ "$heal" -gt 0 ]; then
+  echo "==> healing $heal legacy-only files by rename"
+  while IFS=$'\t' read -r f simple; do
+    [ -e "$simple" ] && { echo "    SKIP (slot taken since scan): $f"; continue; }
+    mv -n -- "$f" "$simple" && echo "    $(basename "$f") -> $(basename "$simple")"
+  done < "$WORK/heal_by_rename.tsv"
+  echo
+fi
+
 echo "==> deleting $safe files"
 n=0
 while IFS= read -r f; do
@@ -151,4 +166,4 @@ while IFS= read -r f; do
   [ $((n % 5000)) -eq 0 ] && echo "    $n / $safe"
 done < "$WORK/safe_to_delete.txt"
 echo "    done: $n files removed"
-echo "Kept for review: $nocp with no counterpart, $diff with a size mismatch, $unparse unparseable."
+echo "Healed by rename: $heal. Kept for review: $nocp counterpart-taken, $diff size mismatch, $unparse unparseable."
