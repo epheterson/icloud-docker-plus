@@ -72,13 +72,16 @@ jobs:
           tags: |
             ghcr.io/epheterson/icloud-docker-plus:${{ inputs.version }}
             ${{ inputs.move_latest && 'ghcr.io/epheterson/icloud-docker-plus:latest' || '' }}
+          # NOTE: every line inside `labels:` becomes a label, comments
+          # included -- so the explanation lives out here instead.
+          #
+          # GHCR links a package to the repo named by image.source, and that
+          # link is what grants this workflow's GITHUB_TOKEN write access. It
+          # must therefore name the PUBLISHING repo, not the source repo:
+          # pointing it at epheterson/icloud-docker is why the first run died
+          # with "denied: permission_denied: write_package". The source tree is
+          # recorded in the plus.source.* labels instead.
           labels: |
-            # GHCR links a package to the repo named by image.source, and that
-            # link is what gives this workflow's GITHUB_TOKEN write access. It
-            # must therefore be the PUBLISHING repo, not the source repo --
-            # pointing it at epheterson/icloud-docker is why the first run died
-            # with "denied: permission_denied: write_package". The source tree
-            # is recorded in the plus.source.* labels below.
             org.opencontainers.image.source=https://github.com/epheterson/icloud-docker-plus
             org.opencontainers.image.revision=${{ steps.prov.outputs.sha }}
             org.opencontainers.image.version=${{ inputs.version }}
