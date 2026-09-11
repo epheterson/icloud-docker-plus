@@ -1,0 +1,48 @@
+# The plus image is built from epheterson/icloud-docker@plus/live, which is a
+# merge of upstream main and every branch still open as a PR upstream. Nothing
+# else tests that combination: the upstream PR workflows each test one branch
+# against main, so a conflict-free merge that is nonetheless broken would go
+# unnoticed until it reached the NAS.
+name: test plus/live
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so a change to upstream main that breaks the merge surfaces
+    # without waiting for someone to cut a release.
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out plus/live
+        uses: actions/checkout@v4
+        with:
+          repository: epheterson/icloud-docker
+          ref: plus/live
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install
+        run: |
+          pip install -U pip wheel
+          pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Test
+        # ENV_CONFIG_FILE_PATH is what src/__init__.py keys its test bootstrap
+        # off; without it the suite tries to open /config/icloud.log and dies
+        # before collection.
+        env:
+          ENV_CONFIG_FILE_PATH: tests/data/test_config.yaml
+        run: pytest -q --cov-fail-under=100
