@@ -2,22 +2,19 @@
 
 The published image is `ghcr.io/epheterson/icloud-docker-plus`. It is **not** a plain build of `epheterson/icloud-docker` — it is upstream `main` plus the feature branches that are still open as PRs against `mandarons/icloud-docker`.
 
-## Current state (2026-08-21)
+## Current state (2026-09-11)
 
-`0.10.0` is an **overlay** build: it layers the verified-live source files onto `0.9.2` rather than rebuilding from a merged tree. This exists because four of the six still-open branches conflict against the current upstream `main`, and that integration was not worth rushing onto a live system:
+The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is cut from `upstream/main`, carries every open PR branch, and is currently level with upstream (0 commits behind). Suite green at 100% coverage, `ruff check` clean.
 
-| Branch | PR | Merges onto `upstream/main` |
-| --- | --- | --- |
-| `feat/photos-filename-format-simple` | #457 | clean |
-| `feat/photos-preserve-originals-as-bak` | #458 | clean |
-| `fix/2fa-trigger-push` | #486 | conflict |
-| `fix/drive-bundle-redownload-loop` | #473 | conflict |
-| `fix/drive-package-single-file-bundles` | #461 | conflict |
-| `feat/telegram-2fa-clean` | #470 | conflict |
+**Every open PR now merges cleanly against `upstream/main`.** The four conflicts that forced the `0.10.0` overlay build were resolved on 2026-08-31, so the overlay approach is retired — `plus/live` is a real merged tree and the image should be built from it.
 
-Note `feat/web-ui` (#464) is **merged upstream**, so the web UI now comes from `main` and no longer needs merging in.
+| Running on the NAS | `0.11.1` |
+| --- | --- |
+| `plus/live` vs that image | ahead — adds [#540](https://github.com/mandarons/icloud-docker/pull/540) and the upstream ruff bumps |
 
-## Rebuild (as done for 0.10.0)
+So a rebuild is pending if you want #540 (the CloudKit error-record fix for unexplained `'fields'` download failures) running live. Nothing else is outstanding.
+
+## Rebuild
 
 Run on the NAS — it has docker but no buildx, and the NAS is the only amd64 host:
 
@@ -33,4 +30,4 @@ Then pin `docker-compose.yml` to the new version and `docker compose up -d --for
 
 ## Next
 
-Replace this with a source build once the six branches are integrated: resolve the four conflicts on a `plus/live` branch cut from `upstream/main`, run the suite, then build from that tree. A GitHub Actions workflow doing exactly that is the end state, so the image stops depending on someone remembering to build it by hand.
+The build is still manual. The end state is a GitHub Actions workflow that builds from `plus/live` on push, so the image stops depending on someone remembering to build it by hand. There is no workflow in this repo yet.
