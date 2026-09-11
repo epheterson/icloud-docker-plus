@@ -16,18 +16,23 @@ So a rebuild is pending if you want #540 (the CloudKit error-record fix for unex
 
 ## Rebuild
 
-Run on the NAS — it has docker but no buildx, and the NAS is the only amd64 host:
+**Do not build on the NAS.** Publish from CI:
 
 ```sh
-cd /volume1/docker/icloud/build
-docker build -t ghcr.io/epheterson/icloud-docker-plus:<version> \
-             -t ghcr.io/epheterson/icloud-docker-plus:latest .
-docker push ghcr.io/epheterson/icloud-docker-plus:<version>
-docker push ghcr.io/epheterson/icloud-docker-plus:latest
+gh workflow run build-publish.yml --repo epheterson/icloud-docker-plus \
+   -f version=<version> -f move_latest=true
 ```
 
-Then pin `docker-compose.yml` to the new version and `docker compose up -d --force-recreate`.
+It tests the merged `plus/live` tree, then builds that tree's own root Dockerfile and pushes to GHCR. Use `move_latest=false` when the change affects how the artifact is composed — verify the NAS runs the pinned version first, then publish again with `move_latest=true`.
 
-## Next
+Then pin the NAS `docker-compose.yml` to the new version and `docker compose up -d --force-recreate`. The repo's `nas-deploy/docker-compose.yml` stays on `:latest` because it is a public template; the NAS gets an explicit pin so what is running is auditable.
 
-The build is still manual. The end state is a GitHub Actions workflow that builds from `plus/live` on push, so the image stops depending on someone remembering to build it by hand. There is no workflow in this repo yet.
+## One-time GHCR setup
+
+The `icloud-docker-plus` package was originally created by pushes from the NAS using a PAT, so it is **not linked to any repository** — and a workflow's `GITHUB_TOKEN` can only write to packages linked to its own repo. Until that link exists the build succeeds and the push fails with `denied: permission_denied: write_package`.
+
+There is no REST API for this. Grant it once at
+<https://github.com/users/epheterson/packages/container/icloud-docker-plus/settings>
+→ **Manage Actions access** → **Add repository** → `icloud-docker-plus` → role **Write**.
+
+Images now carry `org.opencontainers.image.source` pointing at the publishing repo, so the link stays put once established.

@@ -73,7 +73,17 @@ jobs:
             ghcr.io/epheterson/icloud-docker-plus:${{ inputs.version }}
             ${{ inputs.move_latest && 'ghcr.io/epheterson/icloud-docker-plus:latest' || '' }}
           labels: |
+            # GHCR links a package to the repo named by image.source, and that
+            # link is what gives this workflow's GITHUB_TOKEN write access. It
+            # must therefore be the PUBLISHING repo, not the source repo --
+            # pointing it at epheterson/icloud-docker is why the first run died
+            # with "denied: permission_denied: write_package". The source tree
+            # is recorded in the plus.source.* labels below.
+            org.opencontainers.image.source=https://github.com/epheterson/icloud-docker-plus
             org.opencontainers.image.revision=${{ steps.prov.outputs.sha }}
-            org.opencontainers.image.source=https://github.com/epheterson/icloud-docker
+            org.opencontainers.image.version=${{ inputs.version }}
+            plus.source.repo=https://github.com/epheterson/icloud-docker
+            plus.source.ref=plus/live
+            plus.source.sha=${{ steps.prov.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

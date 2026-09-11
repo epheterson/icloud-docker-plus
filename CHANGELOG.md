@@ -8,6 +8,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.11.2] — 2026-09-11
+
+### Fixed
+
+- **An expired download URL no longer fails with an unexplained `'fields'`.** A failed CloudKit `records/lookup` is not an HTTP error: CloudKit returns it inside the `records` array as an entry carrying the *requested* `recordName` and a `serverErrorCode` in place of usable `fields`. The 410 URL refresh matched its record on `recordName` alone, so it assigned that error payload to the photo's master record and reported success — and the retrying download then raised `KeyError('fields')` deep inside icloudpy, surfacing as `Failed to download <path>: 'fields'`. Because the failure was charged to the download rather than the refresh, the refresh-failure counter never moved and the warning that exists precisely to report a broken refresh path never fired. Measured on this install: over 60 hours, 335 assets hit a 410 refresh and 289 then failed this way, with not one such failure occurring without a preceding refresh and not one refresh-failure warning logged. A record carrying a `serverErrorCode`, or whose `fields` are absent or empty, is now rejected and the existing master record left intact. This does not make an unavailable asset downloadable — it replaces a misleading `KeyError` with an accurate 410. Sent upstream as [#540](https://github.com/mandarons/icloud-docker/pull/540).
+
+### Changed
+
+- **The image is built from source by CI instead of by hand on the NAS.** Every version from 0.10.1 to 0.11.1 was an overlay build — `FROM` the last published image plus a `COPY` of individual source files — produced on the NAS and never pushed, so the running image existed on a single disk and could not be rebuilt from any git ref. GitHub Actions now tests the merged `plus/live` tree and builds its own root Dockerfile, publishing to GHCR. The overlay is retired.
+
 ## [0.10.2] — 2026-08-24
 
 ### Fixed
