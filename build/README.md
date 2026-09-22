@@ -8,11 +8,12 @@ The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is c
 
 **Every open PR now merges cleanly against `upstream/main`.** The four conflicts that forced the `0.10.0` overlay build were resolved on 2026-08-31, so the overlay approach is retired — `plus/live` is a real merged tree and the image should be built from it.
 
-| Running on the NAS | `0.11.1` |
+| Running on the NAS | `0.13.0` |
 | --- | --- |
-| `plus/live` vs that image | ahead — adds [#540](https://github.com/mandarons/icloud-docker/pull/540) and the upstream ruff bumps |
+| GHCR `latest` | `0.13.0` — same digest |
+| `plus/live` vs that image | level |
 
-So a rebuild is pending if you want #540 (the CloudKit error-record fix for unexplained `'fields'` download failures) running live. Nothing else is outstanding.
+Nothing is outstanding. The image also pins icloudpy to the branch from [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174), which is what makes security-key sign-in work; pin that to a commit SHA rather than a branch name once the PR settles, so the image cannot shift underneath a rebuild.
 
 ## Rebuild
 

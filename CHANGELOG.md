@@ -8,6 +8,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.13.0] — 2026-09-22
+
+### Added
+
+- **Security-key sign-in actually works.** Once keys are enrolled Apple stops issuing six-digit codes and answers every 2FA endpoint with an `fsaChallenge`. The dashboard ceremony for that already existed here, but the image shipped `icloudpy==0.9.0`, which has no `security_key_challenge` or `confirm_security_key` — so the flow had nothing to call and such an account could not complete two-factor by any route: not the dashboard, not Telegram, not `docker exec`. icloudpy is pinned to the branch from [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) until it lands.
+- **The sync loop says so when Apple wants a key, not a code.** It detects the challenge before anything is sent, records the method so the *first* notification carries the right wording rather than waiting for someone to open the dashboard, and skips the two steps that cannot succeed — requesting a push that sends nothing, and listening six hours for a code that cannot arrive while Telegram says "reply the 6-digit code here". Detection keys on the payload shape, not truthiness: a false positive would suppress the real code flow for an ordinary account.
+- **Revocation is named separately from expiry.** Both surface as `421` and read identically in the logs, but a refresh schedule prevents one and can do nothing about the other. When the trust token has not expired, the log now says how long it had left and that Apple revoked it server-side — which typically follows a new trusted device, a password change, or a change to security keys.
+
+### Fixed
+
+- **A completed re-auth ends the retry wait.** Every auth-retry path blocked in a plain sleep, so finishing the ceremony left the dashboard reading "sync is stopped" for the remainder of an interval that began before the problem was solved — six hours on a typical install — while the container held a session that had just been fixed underneath it. All five web-UI auth-success paths now signal, and the wait ends within seconds. The signal is deliberately **not** the one behind "Sync now": that button means "sync everything now", and borrowing it both queued a photo re-enumeration nobody asked for and let a dashboard tap collapse the anti-throttle backoff that exists because Apple answers a rate-limited account with 409 — turning a stalled page into a way to extend the lockout.
+- **The dashboard no longer scrolls sideways on a phone.** The library grid used a bare `1fr`, which is `minmax(auto, 1fr)`; that `auto` floor resolves to min-content, and library names are `white-space: nowrap`, so min-content was the entire zone-name string. The track outgrew the viewport and the ellipsis never fired because its container widened instead of constraining.
+
+### Changed
+
+- **Libraries Apple created and never serves are set aside.** Apple attaches zones during its own backend migrations and then errors on every query about them; four sitting permanently red trains the eye to skip the state column, which is exactly when a real failure goes unnoticed. They collapse behind an "N unavailable (Apple)" disclosure, with each library's actual error shown. Only libraries that are failing now, have **never** completed a sync, and fail with an unreadable-zone error qualify — anything that ever synced, or fails for another reason, stays visible.
+
 ## [0.11.2] — 2026-09-11
 
 ### Fixed

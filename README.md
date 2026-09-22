@@ -173,7 +173,7 @@ Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/m
 | [icloudpy#138](https://github.com/mandarons/icloudpy/pull/138) | iOS 26.4+ 2FA push trigger | ✅ merged (in 0.9.0) |
 | [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) | Live Photo `.mov` via `live_video_*` keys | ✅ merged (in 0.9.0) |
 | [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) | `iter_chunks` (bounded-memory enumeration primitive) | ✅ merged (in 0.9.0) |
-| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | open |
+| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | open — pinned into this image |
 
 In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
@@ -209,7 +209,7 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#534](https://github.com/mandarons/icloud-docker/pull/534) | one unreadable photo library must not stop the others |
 | [#535](https://github.com/mandarons/icloud-docker/pull/535) | refuse a mass obsolete-delete instead of performing it |
 | [#540](https://github.com/mandarons/icloud-docker/pull/540) | reject a CloudKit error record on a 410 URL refresh (source of unexplained `'fields'` download failures) |
-| *(held)* | sign in with a hardware security key — waiting on icloudpy#174 |
+| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | sign in with a hardware security key — **shipping in this image** (icloudpy pinned to that branch); reaches vanilla `mandarons/icloud-docker` when it merges |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed; and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
 
