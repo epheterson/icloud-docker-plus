@@ -162,7 +162,7 @@ All under `photos:` unless noted. All optional, all default-OFF.
   A templated name that collides falls back to the unique metadata name.
 - **Live Photo `.mov`** — add `live_video_original` (and/or `live_video_medium` / `live_video_thumb`) to `photos.filters.file_sizes`. Non-Live-Photos lack those versions and are skipped quietly.
 - **`require_mount_marker: true`** — refuse to sync unless a `.mounted` file exists in every destination (each `library_destinations` subdir too — any one could be the failed mount).
-- **`preserve_originals_as_bak`** *(being reshaped — [#458](https://github.com/mandarons/icloud-docker/pull/458))* — keeps the unmodified original of an edited photo on disk but hidden from Plex/Photos.app/Synology Photos. Per maintainer feedback this is moving to an `original:hidden` marker inside `file_sizes` rather than a standalone flag; check the PR for the current shape.
+- **`preserve_originals_as_bak`** *(open upstream — [#458](https://github.com/mandarons/icloud-docker/pull/458))* — keeps the unmodified original of an edited photo on disk but hidden from Plex/Photos.app/Synology Photos. Requires `original_alt` in `file_sizes`; the `.bak` sidecar is cleaned up with its photo. An `original:hidden` marker inside `file_sizes` was floated in review as an alternative shape; the PR still ships the flag.
 
 ## PRs feeding this image — status
 
@@ -191,6 +191,11 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#472](https://github.com/mandarons/icloud-docker/pull/472) | streaming photo enumeration (bounds peak RSS) — supersedes closed [#462](https://github.com/mandarons/icloud-docker/pull/462) |
 | [#456](https://github.com/mandarons/icloud-docker/pull/456) | `photos.library_destinations` — per-library subdirs |
 | [#464](https://github.com/mandarons/icloud-docker/pull/464) | embedded web UI — dashboard + on-device re-auth |
+| [#528](https://github.com/mandarons/icloud-docker/pull/528) | rotate the log file instead of growing without bound |
+| [#530](https://github.com/mandarons/icloud-docker/pull/530) | refresh the trust token before it expires; name a revoked token separately from an expired one |
+| [#531](https://github.com/mandarons/icloud-docker/pull/531) | dashboard auth state; end the sign-in retry wait when a re-auth succeeds |
+| [#534](https://github.com/mandarons/icloud-docker/pull/534) | one unreadable photo library must not stop the others |
+| [#535](https://github.com/mandarons/icloud-docker/pull/535) | refuse a mass obsolete-delete instead of performing it |
 
 **Open:**
 
@@ -199,21 +204,16 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#486](https://github.com/mandarons/icloud-docker/pull/486) | request a 2FA push automatically when re-auth is required (base of the Telegram flow) |
 | [#470](https://github.com/mandarons/icloud-docker/pull/470) | complete 2FA from Telegram (optional, headless — stacked on #486) |
 | [#457](https://github.com/mandarons/icloud-docker/pull/457) | `filename_format: simple` + `file_format` templates |
-| [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos (reshaping to `original:hidden`) |
+| [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos as hidden `.original.bak` sidecars |
 | [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
 | [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
-| [#528](https://github.com/mandarons/icloud-docker/pull/528) | rotate the log file instead of growing without bound |
 | [#529](https://github.com/mandarons/icloud-docker/pull/529) | don't exit the process on non-2FA sign-in failures; time out stalled drive downloads |
-| [#530](https://github.com/mandarons/icloud-docker/pull/530) | refresh the trust token before it expires |
-| [#531](https://github.com/mandarons/icloud-docker/pull/531) | dashboard auth state + mobile word-break fix |
-| [#534](https://github.com/mandarons/icloud-docker/pull/534) | one unreadable photo library must not stop the others |
-| [#535](https://github.com/mandarons/icloud-docker/pull/535) | refuse a mass obsolete-delete instead of performing it |
 | [#540](https://github.com/mandarons/icloud-docker/pull/540) | reject a CloudKit error record on a 410 URL refresh (source of unexplained `'fields'` download failures) |
 | [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | sign in with a hardware security key — **shipping in this image** (icloudpy pinned to that branch); reaches vanilla `mandarons/icloud-docker` when it merges |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed; and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for what each release contains, and [`build/README.md`](build/README.md) for how the image is assembled and which branches currently conflict against upstream `main`.
+See [`CHANGELOG.md`](CHANGELOG.md) for what each release contains, and [`build/README.md`](build/README.md) for how the image is built and published.
 
 ## Lifecycle
 
