@@ -8,6 +8,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.14.0] — 2026-09-24
+
+Rebuilt from current upstream `main`, which now carries six more of this image's fixes: [#528](https://github.com/mandarons/icloud-docker/pull/528) log rotation, [#530](https://github.com/mandarons/icloud-docker/pull/530) trust refresh and revocation naming, [#531](https://github.com/mandarons/icloud-docker/pull/531) dashboard auth state and the re-auth wake, [#534](https://github.com/mandarons/icloud-docker/pull/534) per-library isolation, [#535](https://github.com/mandarons/icloud-docker/pull/535) the mass-delete limit, and [#540](https://github.com/mandarons/icloud-docker/pull/540) the CloudKit error-record fix. The seven still-open PRs are layered on top, then the plus-only work.
+
+### Fixed
+
+- **A security-key sign-in now resumes the sync straight away.** Upstream's re-auth wake covers the sign-in paths upstream has; the two security-key paths exist only here, so a successful key ceremony left the loop sleeping out its retry interval with the dashboard still reading "sync is stopped".
+- **The unavailable-libraries panel no longer claims to know why a library is unreadable.** It shows each library's actual error, so a genuinely revoked share isn't collapsed and blamed on Apple's migrations.
+- **Drive's legacy download path honours `drive.flatten_packages`.** Only the parallel path passed it through; from review on [#473](https://github.com/mandarons/icloud-docker/pull/473).
+- **A malformed `app.logger.max_bytes` or `backup_count` falls back to the default** instead of raising out of module import into a restart loop.
+
+### Changed
+
+- **icloudpy is pinned to the merged [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) commit on `mandarons/icloudpy`**, replacing the pin to our fork's branch. Same security-key code, now from the official repo. It moves to the released version once one ships.
+
 ## [0.13.0] — 2026-09-22
 
 ### Added

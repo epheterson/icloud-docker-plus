@@ -2,18 +2,20 @@
 
 The published image is `ghcr.io/epheterson/icloud-docker-plus`. It is **not** a plain build of `epheterson/icloud-docker` — it is upstream `main` plus the feature branches that are still open as PRs against `mandarons/icloud-docker`.
 
-## Current state (2026-09-11)
+## Current state (2026-09-24)
 
 The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is cut from `upstream/main`, carries every open PR branch, and is currently level with upstream (0 commits behind). Suite green at 100% coverage, `ruff check` clean.
 
 **Every open PR now merges cleanly against `upstream/main`.** The four conflicts that forced the `0.10.0` overlay build were resolved on 2026-08-31, so the overlay approach is retired — `plus/live` is a real merged tree and the image should be built from it.
 
-| Running on the NAS | `0.13.0` |
+| Running on the NAS | `0.14.0` |
 | --- | --- |
-| GHCR `latest` | `0.13.0` — same digest |
+| GHCR `latest` | `0.14.0` — same digest |
 | `plus/live` vs that image | level |
 
-Nothing is outstanding. The image also pins icloudpy to the branch from [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174), which is what makes security-key sign-in work; pin that to a commit SHA rather than a branch name once the PR settles, so the image cannot shift underneath a rebuild.
+Nothing is outstanding. icloudpy is pinned by SHA to the merge commit of [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) on `mandarons/icloudpy` (security-key sign-in; merged, not yet released). Swap for the released version when it ships.
+
+**Keeping it current is standing policy:** whenever upstream `main` moves or an open PR branch changes, rebuild `plus/live` from `upstream/main` + the open PR branches + the plus-only commits, publish, promote, and deploy.
 
 ## Rebuild
 
