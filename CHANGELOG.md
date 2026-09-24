@@ -8,6 +8,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.14.1] — 2026-09-24
+
+### Fixed
+
+- **An Apple error during sign-in no longer crash-loops the container.** icloudpy re-raises most sign-in errors — a 409 or 401 carrying a reason, any 5xx — as `ICloudPyFailedLoginException`, which the loop didn't catch, so the process exited and `restart: unless-stopped` turned that into a loop that hammers Apple's sign-in. It now takes the 30-minute auth backoff, and notifies, since a rejected password never heals by retrying. Found in review on [#529](https://github.com/mandarons/icloud-docker/pull/529).
+- The service-failure backoff no longer ignores "Sync now", and malformed YAML such as `app: 123` no longer raises at import.
+
 ## [0.14.0] — 2026-09-24
 
 Rebuilt from current upstream `main`, which now carries six more of this image's fixes: [#528](https://github.com/mandarons/icloud-docker/pull/528) log rotation, [#530](https://github.com/mandarons/icloud-docker/pull/530) trust refresh and revocation naming, [#531](https://github.com/mandarons/icloud-docker/pull/531) dashboard auth state and the re-auth wake, [#534](https://github.com/mandarons/icloud-docker/pull/534) per-library isolation, [#535](https://github.com/mandarons/icloud-docker/pull/535) the mass-delete limit, and [#540](https://github.com/mandarons/icloud-docker/pull/540) the CloudKit error-record fix. The seven still-open PRs are layered on top, then the plus-only work.
