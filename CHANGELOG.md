@@ -8,6 +8,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.15.1] — 2026-09-24
+
+### Changed
+
+- **The security-key signer is one short command.** Instead of pasting 5 KB of Python, the page offers `uv run https://raw.githubusercontent.com/epheterson/icloud-docker/<commit>/src/icloud_sign.py <challenge>`, pinned to the exact commit the image was built from, with a link to read that file first. It's fetched from GitHub rather than the dashboard, because a dashboard that accepts an Apple ID password should sit behind an auth proxy, and `uv` can't get past one. The self-contained form remains for machines with no internet.
+- **The signer says what a touch will approve** before asking for it: an Apple sign-in for `apple.com`, relayed from your container. That's the mitigation Microsoft uses for the same relay pattern in [WebAuthn redirection](https://learn.microsoft.com/en-us/azure/virtual-desktop/redirection-configure-webauthn).
+
+0.15.0 briefly served the signer from the dashboard itself; that version failed behind Cloudflare Access and is superseded.
+
 ## [0.14.2] — 2026-09-24
 
 [#529](https://github.com/mandarons/icloud-docker/pull/529) is now merged upstream.
