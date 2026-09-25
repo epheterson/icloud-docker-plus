@@ -182,6 +182,7 @@ Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/m
 | [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) | Live Photo `.mov` via `live_video_*` keys | ✅ merged (in 0.9.0) |
 | [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) | `iter_chunks` (bounded-memory enumeration primitive) | ✅ merged (in 0.9.0) |
 | [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | ✅ merged, not yet released — this image pins the merge commit |
+| [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186) | forward the download timeout to Drive's `by_id` lookup | open |
 
 In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
