@@ -8,6 +8,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.14.2] — 2026-09-24
+
+[#529](https://github.com/mandarons/icloud-docker/pull/529) is now merged upstream.
+
+### Fixed
+
+- **One failed 2FA push request no longer silences the push for the whole re-auth episode.** `trigger_2fa_push_notification` reports most failures by returning False rather than raising, and the latch was set regardless — so a single rejected request meant "2FA is required" with no code ever sent. It now latches only when Apple accepts, and retries on the next cycle. From review on [#486](https://github.com/mandarons/icloud-docker/pull/486).
+- **Exit mode (`retry_login_interval < 0`) requests the push before exiting** — that's when an operator is about to step in by hand. Security-key accounts are still skipped; Apple sends them no code.
+
 ## [0.14.1] — 2026-09-24
 
 ### Fixed
