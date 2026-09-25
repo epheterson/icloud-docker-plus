@@ -69,6 +69,7 @@ jobs:
           push: true
           build-args: |
             APP_VERSION=${{ inputs.version }}
+            PLUS_SOURCE_SHA=${{ steps.prov.outputs.sha }}
           tags: |
             ghcr.io/epheterson/icloud-docker-plus:${{ inputs.version }}
             ${{ inputs.move_latest && 'ghcr.io/epheterson/icloud-docker-plus:latest' || '' }}

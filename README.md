@@ -88,7 +88,15 @@ iCloud trust lapses periodically — though this image refreshes the trust token
 
 Once security keys are enrolled, Apple stops offering 6-digit codes entirely and returns a WebAuthn challenge instead — which is why every headless client, this one included, used to be locked out of such an account permanently.
 
-Open `/auth/security-key`, press **Get a challenge**, and it hands you a one-line command. Run it on whichever machine has the key, touch the key, paste the result back. One touch, no PIN, and the signing machine needs no route back to the container. The command carries the signer inline, never sees your password, never contacts Apple, and returns the signature via the clipboard rather than the screen.
+Open `/auth/security-key`, press **Get a challenge**, and it hands you one short command:
+
+```sh
+uv run https://raw.githubusercontent.com/epheterson/icloud-docker/<commit>/src/icloud_sign.py <challenge>
+```
+
+Run it on whichever machine has the key, touch the key, and paste the result back. One touch, no PIN. The signer never sees your password and never contacts Apple; it prints what it is about to sign before asking for the touch, and returns the signature through the clipboard rather than the screen. The script comes from this repo at the exact commit your image was built from, so it can't change underneath you, and the page links to it so you can read it first. For a machine with no internet, the page also offers a self-contained version that carries the signer inline.
+
+**Why a command and not a button:** WebAuthn ties Apple's challenge to `apple.com`, so no browser will sign it on another site's behalf, and browsers block raw access to security keys for the same reason. That restriction is what protects your account from phishing, so it isn't something to work around. The alternative is the pattern Windows Remote Desktop and Citrix ship as [WebAuthn redirection](https://learn.microsoft.com/en-us/azure/virtual-desktop/redirection-configure-webauthn): the session that needs the assertion relays the challenge to the machine that holds the key, and only the signed assertion travels back. Apple still checks the challenge and relying party exactly as it would for a browser sign-in.
 
 ### Telegram (headless — reply from your phone)
 
