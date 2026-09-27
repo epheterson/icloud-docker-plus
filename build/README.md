@@ -11,7 +11,7 @@ The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is c
 | Running on the NAS | `0.15.2` |
 | --- | --- |
 | GHCR `latest` | `0.15.2` — same digest |
-| `plus/live` vs that image | same behaviour — `plus/live` since took upstream's wording of one equivalent line in `drive_parallel_download.py` (from the #473 merge); not worth a release on its own |
+| `plus/live` vs that image | same behaviour — `plus/live` since took upstream's wording of one equivalent line in `drive_parallel_download.py` (from the #473 merge); not worth a release on its own. Every open PR is now merged upstream, so `plus/live` is upstream `main` plus the plus-only commits |
 
 Nothing is outstanding. icloudpy is pinned by SHA to `mandarons/icloudpy` `main` at the merge of [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186), which also carries [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) (security-key sign-in). Both are merged, not yet released. Swap for the released version when it ships.
 
