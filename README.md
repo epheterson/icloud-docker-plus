@@ -209,17 +209,17 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#529](https://github.com/mandarons/icloud-docker/pull/529) | don't exit the process on non-2FA sign-in failures; time out stalled drive downloads |
 | [#486](https://github.com/mandarons/icloud-docker/pull/486) | request a 2FA push automatically when re-auth is required (base of the Telegram flow) |
 | [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos as hidden `.original.bak` sidecars |
+| [#470](https://github.com/mandarons/icloud-docker/pull/470) | complete 2FA from Telegram (optional, headless) |
+| [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
+| [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
 
 **Open:**
 
 | PR | what |
 |---|---|
-| [#470](https://github.com/mandarons/icloud-docker/pull/470) | complete 2FA from Telegram (optional, headless — builds on merged #486) |
 | [#457](https://github.com/mandarons/icloud-docker/pull/457) | `filename_format: simple` + `file_format` templates |
-| [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
-| [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
 
-> **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed (✅ merged); and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
+> **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed (✅ merged); and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top (✅ merged).
 
 See [`CHANGELOG.md`](CHANGELOG.md) for what each release contains, and [`build/README.md`](build/README.md) for how the image is built and published.
 
