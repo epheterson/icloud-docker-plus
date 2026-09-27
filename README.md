@@ -170,7 +170,7 @@ All under `photos:` unless noted. All optional, all default-OFF.
   A templated name that collides falls back to the unique metadata name.
 - **Live Photo `.mov`** — add `live_video_original` (and/or `live_video_medium` / `live_video_thumb`) to `photos.filters.file_sizes`. Non-Live-Photos lack those versions and are skipped quietly.
 - **`require_mount_marker: true`** — refuse to sync unless a `.mounted` file exists in every destination (each `library_destinations` subdir too — any one could be the failed mount).
-- **`preserve_originals_as_bak`** *(open upstream — [#458](https://github.com/mandarons/icloud-docker/pull/458))* — keeps the unmodified original of an edited photo on disk but hidden from Plex/Photos.app/Synology Photos. Requires `original_alt` in `file_sizes`; the `.bak` sidecar is cleaned up with its photo. An `original:hidden` marker inside `file_sizes` was floated in review as an alternative shape; the PR still ships the flag.
+- **`preserve_originals_as_bak`** *(merged upstream — [#458](https://github.com/mandarons/icloud-docker/pull/458))* — keeps the unmodified original of an edited photo on disk but hidden from Plex/Photos.app/Synology Photos. Requires `original_alt` in `file_sizes`; the `.bak` sidecar is cleaned up with its photo.
 
 ## PRs feeding this image — status
 
@@ -181,8 +181,8 @@ Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/m
 | [icloudpy#138](https://github.com/mandarons/icloudpy/pull/138) | iOS 26.4+ 2FA push trigger | ✅ merged (in 0.9.0) |
 | [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) | Live Photo `.mov` via `live_video_*` keys | ✅ merged (in 0.9.0) |
 | [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) | `iter_chunks` (bounded-memory enumeration primitive) | ✅ merged (in 0.9.0) |
-| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | ✅ merged, not yet released — this image pins the merge commit |
-| [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186) | forward the download timeout to Drive's `by_id` lookup | open |
+| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | ✅ merged, not yet released — this image pins `main` |
+| [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186) | forward the download timeout to Drive's `by_id` lookup | ✅ merged, not yet released — this image pins `main` |
 
 In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
@@ -207,19 +207,19 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#535](https://github.com/mandarons/icloud-docker/pull/535) | refuse a mass obsolete-delete instead of performing it |
 | [#540](https://github.com/mandarons/icloud-docker/pull/540) | reject a CloudKit error record on a 410 URL refresh (source of unexplained `'fields'` download failures) |
 | [#529](https://github.com/mandarons/icloud-docker/pull/529) | don't exit the process on non-2FA sign-in failures; time out stalled drive downloads |
+| [#486](https://github.com/mandarons/icloud-docker/pull/486) | request a 2FA push automatically when re-auth is required (base of the Telegram flow) |
+| [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos as hidden `.original.bak` sidecars |
 
 **Open:**
 
 | PR | what |
 |---|---|
-| [#486](https://github.com/mandarons/icloud-docker/pull/486) | request a 2FA push automatically when re-auth is required (base of the Telegram flow) |
-| [#470](https://github.com/mandarons/icloud-docker/pull/470) | complete 2FA from Telegram (optional, headless — stacked on #486) |
+| [#470](https://github.com/mandarons/icloud-docker/pull/470) | complete 2FA from Telegram (optional, headless — builds on merged #486) |
 | [#457](https://github.com/mandarons/icloud-docker/pull/457) | `filename_format: simple` + `file_format` templates |
-| [#458](https://github.com/mandarons/icloud-docker/pull/458) | preserve originals of edited photos as hidden `.original.bak` sidecars |
 | [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
 | [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
 
-> **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed; and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
+> **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed (✅ merged); and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for what each release contains, and [`build/README.md`](build/README.md) for how the image is built and published.
 

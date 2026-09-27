@@ -8,6 +8,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.15.2] — 2026-09-27
+
+Rebuilt on upstream `main`, which now includes [#486](https://github.com/mandarons/icloud-docker/pull/486) and [#458](https://github.com/mandarons/icloud-docker/pull/458).
+
+### Fixed
+
+- **With Telegram listen on, a rejected password or a throttled sign-in reaches Telegram as the real error.** It used to be replaced by "reply 'auth' for a code", a flow that cannot work when sign-in never gets as far as 2FA. Only the 2FA prompt now asks for a reply, and never for a security-key account. From review on [#470](https://github.com/mandarons/icloud-docker/pull/470).
+- **A re-auth completed in the dashboard ends the Telegram wait** instead of letting it sit out the rest of the retry interval.
+- **Drive's `by_id` lookup honours the download timeout** ([icloudpy#186](https://github.com/mandarons/icloudpy/pull/186), merged). It was the one request in a Drive download that could hang without limit. icloudpy is pinned to `mandarons/icloudpy` `main` at that merge until a release ships.
+
 ## [0.15.1] — 2026-09-24
 
 ### Changed
