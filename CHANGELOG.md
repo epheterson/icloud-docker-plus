@@ -8,6 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.15.4] — 2026-09-28
+
+### Changed
+
+- **The dashboard lists only the photo libraries this container syncs:** the ones named in config (`photos.filters.libraries` or `photos.library_destinations`), plus any that have completed a sync or are syncing now. Some accounts carry libraries that never serve anything, and they no longer appear. That replaces 0.14's collapsed "unavailable" section, which showed them anyway. The log still records every attempt, and naming a library in config always lists it. This is the version being offered upstream.
+
 ## [0.15.3] — 2026-09-28
 
 Rebuilt on upstream `main`, which now includes [#470](https://github.com/mandarons/icloud-docker/pull/470), [#461](https://github.com/mandarons/icloud-docker/pull/461), [#473](https://github.com/mandarons/icloud-docker/pull/473) and [#457](https://github.com/mandarons/icloud-docker/pull/457). Every icloud-docker PR behind this image is merged except the new #545.

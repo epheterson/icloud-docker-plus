@@ -8,9 +8,9 @@ The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is c
 
 **Every open PR now merges cleanly against `upstream/main`.** The four conflicts that forced the `0.10.0` overlay build were resolved on 2026-08-31, so the overlay approach is retired — `plus/live` is a real merged tree and the image should be built from it.
 
-| Running on the NAS | `0.15.3` |
+| Running on the NAS | `0.15.4` |
 | --- | --- |
-| GHCR `latest` | `0.15.3` — same digest |
+| GHCR `latest` | `0.15.4` — same digest |
 | `plus/live` vs that image | level. Every PR but [#545](https://github.com/mandarons/icloud-docker/pull/545) is merged upstream, so `plus/live` is upstream `main` + #545 + the plus-only commits |
 
 Nothing is outstanding. icloudpy is pinned by SHA to `mandarons/icloudpy` `main` at the merge of [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186), which also carries [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) (security-key sign-in). Both are merged, not yet released. Swap for the released version when it ships.
