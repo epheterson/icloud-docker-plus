@@ -186,6 +186,8 @@ Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/m
 | [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | ✅ merged, not yet released — this image pins `main` |
 | [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186) | forward the download timeout to Drive's `by_id` lookup | ✅ merged, not yet released — this image pins `main` |
 
+A 0.10.0 release carrying both is requested in [icloudpy#187](https://github.com/mandarons/icloudpy/issues/187); security-key sign-in goes upstream to icloud-docker once it ships.
+
 In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
 **Merged upstream** (in `main`; reaches the released image on its next cut):
@@ -221,6 +223,7 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | PR | what |
 |---|---|
 | [#545](https://github.com/mandarons/icloud-docker/pull/545) | download a photo beside its target and check its size before it replaces the photo |
+| [#546](https://github.com/mandarons/icloud-docker/pull/546) | per-library sync state on the dashboard; list only the libraries being synced |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed (✅ merged); and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top (✅ merged).
 
