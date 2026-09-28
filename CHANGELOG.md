@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.15.3] — 2026-09-28
+
+Rebuilt on upstream `main`, which now includes [#470](https://github.com/mandarons/icloud-docker/pull/470), [#461](https://github.com/mandarons/icloud-docker/pull/461), [#473](https://github.com/mandarons/icloud-docker/pull/473) and [#457](https://github.com/mandarons/icloud-docker/pull/457). Every icloud-docker PR behind this image is merged except the new #545.
+
+### Fixed
+
+- **A photo download is checked before it takes the photo's place.** It used to be written straight to the final path. So a transfer that failed partway left a partial file where the photo belongs, which an Immich external library or a backup would pick up as the photo. A body of the wrong size (an error response, say) was recorded as downloaded. And a failed re-download truncated the good copy first. It now downloads to `<name>.part`, checks the size iCloud declares for that version, and only then moves it into place. [#545](https://github.com/mandarons/icloud-docker/pull/545), open upstream.
+
 ## [0.15.2] — 2026-09-27
 
 Rebuilt on upstream `main`, which now includes [#486](https://github.com/mandarons/icloud-docker/pull/486) and [#458](https://github.com/mandarons/icloud-docker/pull/458).
