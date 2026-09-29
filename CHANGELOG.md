@@ -8,6 +8,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.15.6] — 2026-09-29
+
+### Fixed
+
+From review on [#547](https://github.com/mandarons/icloud-docker/pull/547), the security-key PR:
+
+- **Pasting JSON that isn't signer output** (such as `[]`) on the security-key page got a server error; it now gets the same "doesn't look like signer output" message as any other bad paste.
+- **An abandoned security-key sign-in no longer leaves its Apple session cookies in the container's temp dir.** They were removed only when a signature was submitted, so a sign-in that timed out, was reset, or got a stale signature left them behind until the next restart.
+
 ## [0.15.5] — 2026-09-29
 
 Rebuilt on upstream `main`, which now includes [#545](https://github.com/mandarons/icloud-docker/pull/545) and [#546](https://github.com/mandarons/icloud-docker/pull/546). Every icloud-docker PR behind this image is merged.

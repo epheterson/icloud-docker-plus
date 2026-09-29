@@ -8,9 +8,9 @@ The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is c
 
 **Every open PR now merges cleanly against `upstream/main`.** The four conflicts that forced the `0.10.0` overlay build were resolved on 2026-08-31, so the overlay approach is retired — `plus/live` is a real merged tree and the image should be built from it.
 
-| Running on the NAS | `0.15.5` |
+| Running on the NAS | `0.15.6` |
 | --- | --- |
-| GHCR `latest` | `0.15.5` — same digest |
+| GHCR `latest` | `0.15.6` — same digest |
 | `plus/live` vs that image | level. Every PR is merged upstream, so `plus/live` is upstream `main` + the security-key commits |
 
 Nothing is outstanding. icloudpy is the 0.10.0 release from PyPI (security-key sign-in). The security-key work is offered upstream on `feat/security-key-signin`, which points its signer at the release tag rather than this image's commit.
