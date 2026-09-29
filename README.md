@@ -218,7 +218,11 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#545](https://github.com/mandarons/icloud-docker/pull/545) | download a photo beside its target and check its size before it replaces the photo |
 | [#546](https://github.com/mandarons/icloud-docker/pull/546) | per-library sync state on the dashboard; list only the libraries being synced |
 
-**Open:** none yet — the security-key PR is next.
+**Open:**
+
+| PR | what |
+|---|---|
+| [#547](https://github.com/mandarons/icloud-docker/pull/547) | sign in with a hardware security key — the last plus-only feature |
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed (✅ merged); and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top (✅ merged).
 
