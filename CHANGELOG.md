@@ -8,6 +8,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.15.5] — 2026-09-29
+
+Rebuilt on upstream `main`, which now includes [#545](https://github.com/mandarons/icloud-docker/pull/545) and [#546](https://github.com/mandarons/icloud-docker/pull/546). Every icloud-docker PR behind this image is merged.
+
+### Changed
+
+- **icloudpy is the 0.10.0 release** from PyPI, replacing the pin to a `main` commit. It is the first release with security-key sign-in ([icloudpy#174](https://github.com/mandarons/icloudpy/pull/174)) and the Drive timeout fix ([icloudpy#186](https://github.com/mandarons/icloudpy/pull/186)).
+
+### Fixed
+
+- **A scalar `photos.filters.libraries`** (`libraries: Family` rather than a list) is one library on the dashboard, not one row per character. From review on #546.
+
 ## [0.15.4] — 2026-09-28
 
 ### Changed

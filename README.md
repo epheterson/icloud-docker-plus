@@ -33,7 +33,7 @@ I wanted iCloud Shared Photo Library + iCloud Drive backed up to my NAS without 
 
 Plus smaller fixes, all merged upstream: iWork/JMG package downloads no longer count as failures ([#461](https://github.com/mandarons/icloud-docker/pull/461)); package bundles aren't re-downloaded every sync ([#473](https://github.com/mandarons/icloud-docker/pull/473)); the test suite runs on macOS dev hosts ([#455](https://github.com/mandarons/icloud-docker/pull/455)).
 
-> **Where this stands (2026-09-27):** every icloud-docker PR behind this image is merged upstream except [#545](https://github.com/mandarons/icloud-docker/pull/545), opened the same night. Upstream's last release is v2.0.0 (2026-08-07), so most of it reaches `mandarons/icloud-docker:latest` only on its next cut. What stays plus-only: **security-key sign-in** (it needs unreleased icloudpy, pinned here by commit) and a few dashboard touches. Once upstream releases and icloudpy ships 0.10.0, the reasons to run this are down to the security key.
+> **Where this stands (2026-09-29):** every icloud-docker PR behind this image is merged upstream, and icloudpy 0.10.0 (security-key sign-in) is released. Upstream's last icloud-docker release is still v2.0.0 (2026-08-07), so most of this reaches `mandarons/icloud-docker:latest` only on its next cut. The one thing left plus-only is **security-key sign-in**, now being offered upstream as the last PR. When it merges and upstream releases, switch back.
 
 > **Memory note:** this image **streams album enumeration in fixed-size chunks** (`photos.enumeration_chunk_size`, default 1000) — peak RAM is bounded by the chunk, not the library size. Empirically <1 GB resident through a full ~111k-photo enumeration, so a modest `mem_limit` (1–2 GB) is plenty; you don't size it to the library. The consumer rework landed upstream in [#472](https://github.com/mandarons/icloud-docker/pull/472) (the earlier [#462](https://github.com/mandarons/icloud-docker/pull/462) was closed and resubmitted), built on the `iter_chunks` primitive from [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) — both merged. It ships here now and reaches vanilla `mandarons/icloud-docker` on its next release.
 
@@ -183,10 +183,8 @@ Building blocks in `mandarons/icloudpy` (RFC [icloudpy#137](https://github.com/m
 | [icloudpy#138](https://github.com/mandarons/icloudpy/pull/138) | iOS 26.4+ 2FA push trigger | ✅ merged (in 0.9.0) |
 | [icloudpy#139](https://github.com/mandarons/icloudpy/pull/139) | Live Photo `.mov` via `live_video_*` keys | ✅ merged (in 0.9.0) |
 | [icloudpy#140](https://github.com/mandarons/icloudpy/pull/140) | `iter_chunks` (bounded-memory enumeration primitive) | ✅ merged (in 0.9.0) |
-| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | ✅ merged, not yet released — this image pins `main` |
-| [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186) | forward the download timeout to Drive's `by_id` lookup | ✅ merged, not yet released — this image pins `main` |
-
-A 0.10.0 release carrying both is requested in [icloudpy#187](https://github.com/mandarons/icloudpy/issues/187); security-key sign-in goes upstream to icloud-docker once it ships.
+| [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) | hardware security key authentication | ✅ merged, released in 0.10.0 |
+| [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186) | forward the download timeout to Drive's `by_id` lookup | ✅ merged, released in 0.10.0 |
 
 In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandarons/icloud-docker/issues/454)):
 
@@ -217,13 +215,10 @@ In `mandarons/icloud-docker` (RFC [icloud-docker#454](https://github.com/mandaro
 | [#461](https://github.com/mandarons/icloud-docker/pull/461) | Drive package single-file bundles (iWork, JMG) |
 | [#473](https://github.com/mandarons/icloud-docker/pull/473) | skip re-downloading flat package bundles every sync |
 | [#457](https://github.com/mandarons/icloud-docker/pull/457) | `filename_format: simple` + `file_format` templates |
-
-**Open:**
-
-| PR | what |
-|---|---|
 | [#545](https://github.com/mandarons/icloud-docker/pull/545) | download a photo beside its target and check its size before it replaces the photo |
 | [#546](https://github.com/mandarons/icloud-docker/pull/546) | per-library sync state on the dashboard; list only the libraries being synced |
+
+**Open:** none yet — the security-key PR is next.
 
 > **The 2FA work was split at the maintainer's request:** [#471](https://github.com/mandarons/icloud-docker/pull/471) is the universal fix (the icloudpy bump — also makes the documented `docker exec … icloud` re-auth push a code, ✅ merged); [#486](https://github.com/mandarons/icloud-docker/pull/486) requests the push automatically when re-auth is needed (✅ merged); and [#470](https://github.com/mandarons/icloud-docker/pull/470) is the *optional* Telegram convenience layer on top (✅ merged).
 

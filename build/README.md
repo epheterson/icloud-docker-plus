@@ -2,18 +2,18 @@
 
 The published image is `ghcr.io/epheterson/icloud-docker-plus`. It is **not** a plain build of `epheterson/icloud-docker` — it is upstream `main` plus the feature branches that are still open as PRs against `mandarons/icloud-docker`.
 
-## Current state (2026-09-28)
+## Current state (2026-09-29)
 
 The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is cut from `upstream/main`, carries every open PR branch, and is currently level with upstream (0 commits behind). Suite green at 100% coverage, `ruff check` clean.
 
 **Every open PR now merges cleanly against `upstream/main`.** The four conflicts that forced the `0.10.0` overlay build were resolved on 2026-08-31, so the overlay approach is retired — `plus/live` is a real merged tree and the image should be built from it.
 
-| Running on the NAS | `0.15.4` |
+| Running on the NAS | `0.15.5` |
 | --- | --- |
-| GHCR `latest` | `0.15.4` — same digest |
-| `plus/live` vs that image | level. Every PR but [#545](https://github.com/mandarons/icloud-docker/pull/545) is merged upstream, so `plus/live` is upstream `main` + #545 + the plus-only commits |
+| GHCR `latest` | `0.15.5` — same digest |
+| `plus/live` vs that image | level. Every PR is merged upstream, so `plus/live` is upstream `main` + the security-key commits |
 
-Nothing is outstanding. icloudpy is pinned by SHA to `mandarons/icloudpy` `main` at the merge of [icloudpy#186](https://github.com/mandarons/icloudpy/pull/186), which also carries [icloudpy#174](https://github.com/mandarons/icloudpy/pull/174) (security-key sign-in). Both are merged, not yet released. Swap for the released version when it ships.
+Nothing is outstanding. icloudpy is the 0.10.0 release from PyPI (security-key sign-in). The security-key work is offered upstream on `feat/security-key-signin`, which points its signer at the release tag rather than this image's commit.
 
 **Keeping it current is standing policy:** whenever upstream `main` moves or an open PR branch changes, rebuild `plus/live` from `upstream/main` + the open PR branches + the plus-only commits, publish, promote, and deploy.
 
