@@ -8,6 +8,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.16.1] — 2026-09-30
+
+### Fixed
+
+- **`session_data` and `python_keyring` belong to the container user again.** The entrypoint created them as root and skipped fixing their owner whenever `/config` was already owned correctly, so the documented `docker exec … icloud` 2FA command couldn't write its session. Partly a regression of our own [#460](https://github.com/mandarons/icloud-docker/pull/460). [#549](https://github.com/mandarons/icloud-docker/pull/549), fixes [#523](https://github.com/mandarons/icloud-docker/issues/523).
+- **A Drive package whose name has a non-ASCII character no longer downloads again on every sync.** Renaming its contents moved the package's modification time away from iCloud's. [#550](https://github.com/mandarons/icloud-docker/pull/550), fixes [#527](https://github.com/mandarons/icloud-docker/issues/527).
+
 ## [0.16.0] — 2026-09-30
 
 **Everything in this image is now merged upstream.** [#547](https://github.com/mandarons/icloud-docker/pull/547), security-key sign-in, was the last piece. `plus/live` is upstream `main` plus one small patch: the signer command links to this image's exact commit on `epheterson/icloud-docker` instead of a `mandarons` release tag, since plus's version numbers aren't upstream tags. The day `mandarons/icloud-docker` releases, switch back.
