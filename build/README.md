@@ -11,7 +11,7 @@ The integration branch is **`plus/live`** on `epheterson/icloud-docker`. It is c
 | Running on the NAS | `0.16.1` |
 | --- | --- |
 | GHCR `latest` | `0.16.1` — same digest |
-| `plus/live` vs that image | level. Every PR is merged, so `plus/live` is upstream `main` + #549 + #550 + the commit-pinned signer link |
+| `plus/live` vs that image | level. Every feature PR is merged; `plus/live` is upstream `main` + the two open bug fixes (#549, #550) + the commit-pinned signer link |
 
 Nothing is outstanding. When `mandarons/icloud-docker` cuts a release after v2.0.0, it contains everything here: switch the NAS to it and archive this repo.
 
