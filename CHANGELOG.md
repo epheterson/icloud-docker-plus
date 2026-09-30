@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 Nothing yet.
 
+## [0.16.0] — 2026-09-30
+
+**Everything in this image is now merged upstream.** [#547](https://github.com/mandarons/icloud-docker/pull/547), security-key sign-in, was the last piece. `plus/live` is upstream `main` plus one small patch: the signer command links to this image's exact commit on `epheterson/icloud-docker` instead of a `mandarons` release tag, since plus's version numbers aren't upstream tags. The day `mandarons/icloud-docker` releases, switch back.
+
+### Changed
+
+- **The security-key code is upstream's reviewed version,** including the review fixes shipped in 0.15.6.
+
 ## [0.15.6] — 2026-09-29
 
 ### Fixed
